@@ -1,7 +1,6 @@
 <?php
 
 require("_Ajax.comun.php"); // No modificar esta linea
-require_once(__DIR__ . "/_depreciacion_comun.php");
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // S E R V I D O R   A J A X //
   :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
@@ -412,6 +411,7 @@ function f_filtro_subgrupo($aForm = '')
 // PROCESAR DEPRECICION
 function generar($aForm = '')
 {
+    require_once(__DIR__ . "/_depreciacion_comun.php");
     return generar_depreciacion($aForm, false);
 }
 
