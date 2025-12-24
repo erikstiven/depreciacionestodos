@@ -769,7 +769,7 @@ function generar($aForm = '')
                     . '</div>'
                     . $alerta_html
                     . '<div class="table-responsive" style="max-height: 300px; overflow: auto;">'
-                    . '<table class="table table-bordered table-condensed">'
+                    . '<table class="table table-bordered table-condensed table-hover">'
                     . '<thead><tr>'
                     . '<th>Activo</th>'
                     . '<th>Nombre</th>'
@@ -794,7 +794,7 @@ function generar($aForm = '')
                     . '</div>'
                     . '</div>'
                     . '<div class="table-responsive" style="max-height: 300px; overflow: auto;">'
-                    . '<table class="table table-bordered table-condensed">'
+                    . '<table class="table table-bordered table-condensed table-hover">'
                     . '<thead><tr>'
                     . '<th>Activo</th>'
                     . '<th>Nombre</th>'

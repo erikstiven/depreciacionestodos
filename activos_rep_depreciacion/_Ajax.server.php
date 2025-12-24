@@ -908,11 +908,11 @@ function generar($aForm = '')
 							saeact.act_vutil_act,
 							saeact.act_val_comp,
 							saeact.act_vres_act,
-							CASE
-								WHEN EXTRACT(DAY FROM saeact.act_fdep_act) = 1
-									THEN date_trunc('month', saeact.act_fdep_act)
-								ELSE date_trunc('month', saeact.act_fdep_act) + interval '1 month'
-							END AS inicio_mes,
+								CASE
+									WHEN EXTRACT(DAY FROM COALESCE(saeact.act_fdep_act, saeact.act_fcmp_act)) = 1
+										THEN date_trunc('month', COALESCE(saeact.act_fdep_act, saeact.act_fcmp_act))
+									ELSE date_trunc('month', COALESCE(saeact.act_fdep_act, saeact.act_fcmp_act)) + interval '1 month'
+								END AS inicio_mes,
 							saegact.gact_des_gact,
 							saesgac.sgac_des_sgac
 						FROM saeact
@@ -1185,7 +1185,7 @@ function generar($aForm = '')
 					 saegact.gact_des_gact,   
 					 saesgac.sgac_cod_sgac,   
 					 saesgac.sgac_des_sgac,   					 
-					(select COALESCE(SUM(c.cdep_val_repr), 0)
+					(select COALESCE(MAX(c.cdep_dep_acum), 0)
 					 from saecdep c 
 					 where c.cdep_cod_acti = saecdep.cdep_cod_acti
 					 and c.act_cod_empr = saecdep.act_cod_empr
@@ -1431,7 +1431,7 @@ function generar($aForm = '')
 					 saegact.gact_des_gact,   
 					 saesgac.sgac_cod_sgac,   
 					 saesgac.sgac_des_sgac,   					 
-					(select COALESCE(SUM(c.cdep_val_repr), 0)
+					(select COALESCE(MAX(c.cdep_dep_acum), 0)
 					 from saecdep c 
 					 where c.cdep_cod_acti = saecdep.cdep_cod_acti
 					 and c.act_cod_empr = saecdep.act_cod_empr

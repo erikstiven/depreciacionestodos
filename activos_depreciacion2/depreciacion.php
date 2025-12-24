@@ -29,7 +29,13 @@
     
     <script>
         function generaSelect2(){
-            $('.select2').select2();
+            $('.select2').select2({
+                width: '100%',
+                allowClear: true,
+                placeholder: function () {
+                    return $(this).data('placeholder') || 'Seleccione una opción';
+                }
+            });
         }
         function genera_cabecera_formulario() {
             xajax_genera_cabecera_formulario('nuevo', xajax.getFormValues("form1"));
@@ -367,21 +373,21 @@
                         <div class="form-row">
                             <div class="col-md-3">
                                 <label for="empresa">* Empresa </label>
-                                <select id="empresa" name="empresa" class="form-control input-sm select2" onchange="cargar_sucu();" required>
+                                <select id="empresa" name="empresa" class="form-control input-sm select2" data-placeholder="Seleccione una empresa" onchange="cargar_sucu();" required>
                                     <option value="0">Seleccione una opcion..</option>
                                     <?=$lista_empr;?>
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <label for="sucursal">* Sucursal </label>
-                                <select id="sucursal" name="sucursal" class="form-control input-sm select2" onchange="f_filtro_anio_desde(); f_filtro_anio_hasta(); f_filtro_grupo(); validar_rango_periodo();" required>
+                                <select id="sucursal" name="sucursal" class="form-control input-sm select2" data-placeholder="Seleccione una sucursal" onchange="f_filtro_anio_desde(); f_filtro_anio_hasta(); f_filtro_grupo(); validar_rango_periodo();" required>
                                     <option value="0">Seleccione una opcion..</option>  
                                     <?=$lista_sucu;?>                                  
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <label for="anio_desde"> * Año Desde </label>
-                                <select id="anio_desde" name="anio_desde" class="form-control input-sm select2" onchange="f_filtro_mes_desde(); validar_rango_periodo();" required>
+                                <select id="anio_desde" name="anio_desde" class="form-control input-sm select2" data-placeholder="Seleccione un año" onchange="f_filtro_mes_desde(); validar_rango_periodo();" required>
                                     <option value="">Seleccione una opcion..</option>
                                     <?=$lista_ejer;?>
                                 </select>
@@ -389,7 +395,7 @@
 
                             <div class="col-md-3">
                                 <label for="mes_desde"> Mes Desde </label>
-                                <select id="mes_desde" name="mes_desde" class="form-control input-sm select2" onchange="validar_rango_periodo();">
+                                <select id="mes_desde" name="mes_desde" class="form-control input-sm select2" data-placeholder="Seleccione un mes" onchange="validar_rango_periodo();">
                                     <option value="">Seleccione una opcion..</option>
                                     <?=$lista_mes;?>
                                 </select>
@@ -398,14 +404,14 @@
                         <div class="form-row">
                             <div class="col-md-3">
                                 <label for="anio_hasta"> * Año Hasta </label>
-                                <select id="anio_hasta" name="anio_hasta" class="form-control input-sm select2" onchange="f_filtro_mes_hasta(); validar_rango_periodo();" required>
+                                <select id="anio_hasta" name="anio_hasta" class="form-control input-sm select2" data-placeholder="Seleccione un año" onchange="f_filtro_mes_hasta(); validar_rango_periodo();" required>
                                     <option value="">Seleccione una opcion..</option>
                                     <?=$lista_ejer;?>
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <label for="mes_hasta"> Mes Hasta </label>
-                                <select id="mes_hasta" name="mes_hasta" class="form-control input-sm select2" onchange="validar_rango_periodo();">
+                                <select id="mes_hasta" name="mes_hasta" class="form-control input-sm select2" data-placeholder="Seleccione un mes" onchange="validar_rango_periodo();">
                                     <option value="">Seleccione una opcion..</option>
                                     <?=$lista_mes;?>
                                 </select>
@@ -420,28 +426,28 @@
                         <div class="form-row">                            
                             <div class="col-md-3">
                                 <label for="cod_grupo"> Grupo </label>
-                                <select id="cod_grupo" name="cod_grupo" class="form-control input-sm select2" onchange="f_filtro_subgrupo();">
+                                <select id="cod_grupo" name="cod_grupo" class="form-control input-sm select2" data-placeholder="Seleccione un grupo" onchange="f_filtro_subgrupo();">
                                     <option value="0">Seleccione una opcion..</option>
                                     <?=$listaGrupo;?>
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <label for="cod_subgrupo"> Subgrupo </label>
-                                <select id="cod_subgrupo" name="cod_subgrupo" class="form-control input-sm select2" onchange="f_filtro_activos_desde();f_filtro_activos_hasta();">
+                                <select id="cod_subgrupo" name="cod_subgrupo" class="form-control input-sm select2" data-placeholder="Seleccione un subgrupo" onchange="f_filtro_activos_desde();f_filtro_activos_hasta();">
                                     <option value="0">Seleccione una opcion..</option>
                                     <?=$listaSubGrupo;?>
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <label for="cod_activo_desde"> Activo Desde </label>
-                                <select id="cod_activo_desde" name="cod_activo_desde" class="form-control input-sm select2" >
+                                <select id="cod_activo_desde" name="cod_activo_desde" class="form-control input-sm select2" data-placeholder="Activo desde" >
                                     <option value="0">Seleccione una opcion..</option>
                                     <?=$listaActivos;?>
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <label for="cod_activo_hasta"> Activo Hasta </label>
-                                <select id="cod_activo_hasta" name="cod_activo_hasta" class="form-control input-sm select2" >
+                                <select id="cod_activo_hasta" name="cod_activo_hasta" class="form-control input-sm select2" data-placeholder="Activo hasta" >
                                     <option value="0">Seleccione una opcion..</option>
                                     <?=$listaActivos;?>
                                 </select>

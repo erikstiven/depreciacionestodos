@@ -5,6 +5,15 @@ require("_Ajax.comun.php"); // No modificar esta linea
   // S E R V I D O R   A J A X //
   :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 
+function obtener_inicio_mes_depreciacion(DateTime $fecha)
+{
+    $inicio = new DateTime($fecha->format('Y-m-01'));
+    if (intval($fecha->format('d')) !== 1) {
+        $inicio->modify('+1 month');
+    }
+    return $inicio;
+}
+
 /* * ******************************************* */
 /* FCA01 :: GENERA INGRESO TABLA PRESUPUESTO  */
 /* * ******************************************* */
@@ -569,6 +578,8 @@ function generar($aForm = '')
                     $inicio_activo_dt = DateTime::createFromFormat('Y-m-d', $fecha_inicio_activo);
                     if (!$inicio_activo_dt) {
                         $inicio_activo_dt = clone $fecha_inicio_rango;
+                    } else {
+                        $inicio_activo_dt = obtener_inicio_mes_depreciacion($inicio_activo_dt);
                     }
 
                     $fin_activo_dt = null;
@@ -758,7 +769,7 @@ function generar($aForm = '')
                     . '</div>'
                     . $alerta_html
                     . '<div class="table-responsive" style="max-height: 300px; overflow: auto;">'
-                    . '<table class="table table-bordered table-condensed">'
+                    . '<table class="table table-bordered table-condensed table-hover">'
                     . '<thead><tr>'
                     . '<th>Activo</th>'
                     . '<th>Nombre</th>'
@@ -783,7 +794,7 @@ function generar($aForm = '')
                     . '</div>'
                     . '</div>'
                     . '<div class="table-responsive" style="max-height: 300px; overflow: auto;">'
-                    . '<table class="table table-bordered table-condensed">'
+                    . '<table class="table table-bordered table-condensed table-hover">'
                     . '<thead><tr>'
                     . '<th>Activo</th>'
                     . '<th>Nombre</th>'

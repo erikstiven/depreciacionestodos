@@ -615,10 +615,10 @@ function f_genera_index($codigoActivo, $fechaInicio, $vidaUtil, $valorAdepreciar
 	}
 	$num_registros =  round($vidaUtil, 2) * $nMeses;
 	// FECHA INICIAL
-	if ($dia_compra > 15){
+	if (intval($dia_compra) !== 1) {
 		if ($mes_compra == 12){
 			$mes = 01;
-			$anio = $anio_compra + 1;			
+			$anio = $anio_compra + 1;
 		}else{
 			$mes = $mes_compra + 1;
 			$anio = $anio_compra;
@@ -632,7 +632,7 @@ function f_genera_index($codigoActivo, $fechaInicio, $vidaUtil, $valorAdepreciar
 		if ($mes < 10){
 				$mes = '0'.$mes;
 			}
-	}	
+	}
 	// VALOR A DEPRECIAR
 	$compra_origen = $valor_compra;
 	$valor_compra   = round(($valor_compra - $valor_residual) / $num_registros, 2);				
