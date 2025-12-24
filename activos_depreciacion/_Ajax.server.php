@@ -579,7 +579,7 @@ function generar($aForm = '')
                     if (!$inicio_activo_dt) {
                         $inicio_activo_dt = clone $fecha_inicio_rango;
                     } else {
-                        $inicio_activo_dt = obtener_inicio_mes_depreciacion($inicio_activo_dt);
+                        $inicio_activo_dt->modify('first day of this month');
                     }
 
                     $fin_activo_dt = null;
@@ -680,26 +680,24 @@ function generar($aForm = '')
                                 }
                                 $oIfx->Free();
 
-                                $valor_mesual = $arrayValorDepre[$codigo_activo] ?? 0;
+                                $tiene_plan_mes = array_key_exists($codigo_activo, $arrayValorDepre);
+                                $valor_mesual = $tiene_plan_mes ? $arrayValorDepre[$codigo_activo] : 0;
 
-                                $sql_dep_acumulada = "SELECT (coalesce(cdep_dep_acum, 0) +  coalesce(cdep_gas_depn, 0)) as depr_acumulada
+                                $sql_dep_acumulada = "SELECT coalesce(cdep_dep_acum, 0) as depr_acumulada
 										from saecdep
 										where cdep_cod_acti = $codigo_activo 
 										and cdep_ani_depr = $anio_prev
 										and cdep_mes_depr = $mes_prev";
-                                $valor_acumulado = consulta_string($sql_dep_acumulada, 'depr_acumulada', $oIfx, 0);
-
-                                if ($valor_acumulado == 0) {
-                                    $valor_anterior = 0;
-                                    $valor_acumulado = $valor_mesual;
-                                } else {
-                                    $valor_anterior = $valor_acumulado - $valor_mesual;
-                                }
+                                $valor_anterior = floatval(consulta_string($sql_dep_acumulada, 'depr_acumulada', $oIfx, 0));
+                                $valor_acumulado = $valor_anterior + $valor_mesual;
 
                                 if (!$depreciacion_valida) {
                                     $estado = 'OMITIDO';
                                     $motivo = 'DEPRECIACION NO CALCULADA';
-                                } elseif ($valor_acumulado >= $valor_neto || ($valor_acumulado + $depreciacion_mensual) > $valor_neto) {
+                                } elseif (!$tiene_plan_mes) {
+                                    $estado = 'OMITIDO';
+                                    $motivo = 'SIN PLAN SAEMET';
+                                } elseif ($valor_acumulado > $valor_neto) {
                                     $estado = 'OMITIDO';
                                     $motivo = 'VALOR RESIDUAL ALCANZADO';
                                 } else {
