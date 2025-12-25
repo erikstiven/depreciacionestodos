@@ -8,7 +8,7 @@ require("_Ajax.comun.php"); // No modificar esta linea
 function obtener_inicio_mes_depreciacion(DateTime $fecha)
 {
 	$inicio = new DateTime($fecha->format('Y-m-01'));
-	if (intval($fecha->format('d')) !== 1) {
+	if (intval($fecha->format('d')) > 15) {
 		$inicio->modify('+1 month');
 	}
 	return $inicio;
@@ -804,7 +804,7 @@ function generar($aForm = '')
 						if (!$inicio_activo_dt) {
 							$inicio_activo_dt = clone $periodo_fin_dt;
 						} else {
-							$inicio_activo_dt->modify('first day of this month');
+							$inicio_activo_dt = obtener_inicio_mes_depreciacion($inicio_activo_dt);
 						}
 
 					$vida_util_meses = $vida_util * 12;
