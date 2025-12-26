@@ -936,7 +936,7 @@ function f_cargar_datos($aForm){
 					$codigoGrupo = $oIfx->f('gact_cod_gact');
 					$oReturn->assign('gact_cod_gact', 'value', $codigoGrupo);
 					$codigoSubGrupo = $oIfx->f('sgac_cod_sgac');
-					$oReturn->script("cargar_subgrupo_por_grupo('".addslashes($codigoGrupo)."', '".addslashes($codigoSubGrupo)."')");
+					cargar_lista_subgrupos($oReturn, $oIfx, $idempresa, $codigoGrupo, $codigoSubGrupo);
 					$oReturn->assign('tdep_cod_tdep', 'value',$oIfx->f('tdep_cod_tdep'));
 					
 					if ($oIfx->f('act_est_reva') == 'R'){
@@ -1053,6 +1053,12 @@ function f_filtro_subgrupo($aForm, $data){
     //variables formulario
     $codigoGrupo = $aForm['gact_cod_gact'];
 	$empresa = $_SESSION['U_EMPRESA'];
+    cargar_lista_subgrupos($oReturn, $oIfx, $empresa, $codigoGrupo, $data);
+
+    return $oReturn;
+}
+
+function cargar_lista_subgrupos($oReturn, $oIfx, $empresa, $codigoGrupo, $codigoSubgrupo){
 	// DATOS DEL ACTIVO
 	$sql = "select sgac_cod_sgac, sgac_des_sgac 
 			 from saesgac where sgac_cod_empr = '$empresa'                                                                  
@@ -1068,11 +1074,9 @@ function f_filtro_subgrupo($aForm, $data){
         }
     }
 	//$oReturn->alert($sql);
-	//$oReturn->alert($data);
-    $oReturn->assign('sgac_cod_sgac', 'value', $data);
+	//$oReturn->alert($codigoSubgrupo);
+    $oReturn->assign('sgac_cod_sgac', 'value', $codigoSubgrupo);
 	//$oReturn->assign('sgac_cod_sgac', 'disabled', false);
-
-    return $oReturn;
 }
 
 // RESETEAR DATOS DE FORMA DE CTAS GASTOS
