@@ -292,15 +292,15 @@
                     </div>                  
 
                     <div class="col-md-12">
-                        <div class="form-row">
-                            <div class="col-md-3">
+                        <div class="row">
+                            <div class="col-md-6">
                                 <label for="empresa">* Empresa </label>
                                 <select id="empresa" name="empresa" class="form-control input-sm select2" data-placeholder="Seleccione una empresa" onchange="cargar_sucu();" required>
                                     <option value="0">Seleccione una opcion..</option>
                                     <?=$lista_empr;?>
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-6">
                                 <label for="sucursal">* Sucursal </label>
                                 <select id="sucursal" name="sucursal" class="form-control input-sm select2" data-placeholder="Seleccione una sucursal" onchange="f_filtro_grupo();" required>
                                     <option value="0">Seleccione una opcion..</option>  
@@ -310,7 +310,7 @@
                         </div>
                     </div>
                     <div class="col-md-12">
-                        <div class="row">                            
+                        <div class="row" style="margin-top: 10px;">
                             <div class="col-md-3">
                                 <label for="cod_grupo"> Grupo </label>
                                 <select id="cod_grupo" name="cod_grupo" class="form-control input-sm select2" data-placeholder="Seleccione un grupo" onchange="f_filtro_subgrupo();">

@@ -537,7 +537,7 @@ function validarPlan($aForm = '')
     $filtro = $contexto['filtro'];
     $tiene_estado = plan_tiene_met_estado($oIfx);
 
-    $sql_activos = "select act_cod_act, act_val_comp, act_vres_act, act_clave_act
+    $sql_activos = "select act_cod_act, act_val_comp, act_vres_act, act_clave_act, act_nom_act
                     from saeact
                     where act_cod_empr = $empresa
                     and act_cod_sucu = $sucursal
@@ -553,6 +553,7 @@ function validarPlan($aForm = '')
             while ($oIfx->SiguienteRegistro()) {
                 $codigo_activo = $oIfx->f('act_cod_act');
                 $clave_activo = $oIfx->f('act_clave_act');
+                $nombre_activo = $oIfx->f('act_nom_act');
                 $valor_neto = round(floatval($oIfx->f('act_val_comp')) - floatval($oIfx->f('act_vres_act')), 2);
 
                 $sql_plan = "select count(*) as total
@@ -561,7 +562,7 @@ function validarPlan($aForm = '')
                             and metd_cod_acti = $codigo_activo";
                 $plan_existe = intval(consulta_string($sql_plan, 'total', $oIfx, 0));
                 if ($plan_existe === 0) {
-                    $mensajes[] = "El activo {$clave_activo} no tiene plan generado.";
+                    $mensajes[] = "El activo {$clave_activo} - {$nombre_activo} no tiene plan generado.";
                     continue;
                 }
 
