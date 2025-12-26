@@ -343,10 +343,10 @@
                         <div class="row" style="margin-top: 10px;">
                             <div class="col-md-12">
                                 <div class="checkbox" style="margin-top: 0;">
-                                    <label>
-                                        <input type="checkbox" id="aplicar_prorroga" name="aplicar_prorroga" value="1" onclick="toggleProrroga();">
+                                    <label title="Funcionalidad pendiente">
+                                        <input type="checkbox" id="aplicar_prorroga" name="aplicar_prorroga" value="1" onclick="toggleProrroga();" disabled>
                                         Aplicar prórroga de vida útil
-                                        <span class="glyphicon glyphicon-info-sign text-info" title="Extiende la vida útil agregando nuevos meses al plan. Se aplica solo si selecciona un activo específico y el plan ya terminó."></span>
+                                        <span class="glyphicon glyphicon-info-sign text-info" title="Funcionalidad pendiente"></span>
                                     </label>
                                 </div>
                                 <div class="input-group">

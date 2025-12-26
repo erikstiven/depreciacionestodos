@@ -262,6 +262,8 @@ function plan_tiene_met_estado($oIfx)
     return intval(consulta_string($sql, 'total', $oIfx, 0)) > 0;
 }
 
+// NOTA: El plan NO se genera en este módulo.
+// Esta función solo muestra un mensaje informativo.
 function generarPlan($aForm = '')
 {
     global $DSN, $DSN_Ifx;
@@ -280,7 +282,7 @@ function generarPlan($aForm = '')
         return $oReturn;
     }
 
-    $oReturn->assign('divPlanMensajes', 'innerHTML', plan_mensaje_alerta('El plan se genera desde la ficha del activo. Use \"Consultar Plan\" para revisar y validar.'));
+    $oReturn->assign('divPlanMensajes', 'innerHTML', plan_mensaje_alerta('El activo no tiene plan de depreciación generado. El plan se crea al guardar o actualizar la ficha del activo.'));
     $oReturn->script("document.getElementById('divPlanMensajes').style.display = 'block';");
     return $oReturn;
 }
