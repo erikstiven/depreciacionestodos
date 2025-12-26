@@ -253,6 +253,15 @@ function plan_filtros_completos($aForm)
         && !empty($aForm['cod_activo_hasta']) && $aForm['cod_activo_hasta'] !== '0';
 }
 
+function plan_tiene_met_estado($oIfx)
+{
+    $sql = "select count(*) as total
+            from information_schema.columns
+            where table_name = 'saemet'
+            and column_name = 'met_estado'";
+    return intval(consulta_string($sql, 'total', $oIfx, 0)) > 0;
+}
+
 function generarPlan($aForm = '')
 {
     global $DSN, $DSN_Ifx;
@@ -279,6 +288,7 @@ function generarPlan($aForm = '')
     $empresa = $contexto['empresa'];
     $sucursal = $contexto['sucursal'];
     $filtro = $contexto['filtro'];
+    $tiene_estado = plan_tiene_met_estado($oIfx);
 
     $sql = "SELECT saeact.act_cod_act,
                    saeact.act_vutil_act,
@@ -378,13 +388,23 @@ function generarPlan($aForm = '')
                     }
                     $acumulado += $monto;
 
-                    $sql_insert = "insert into saemet
-                        (met_anio_met, metd_des_fech, metd_has_fech, metd_cod_empr, metd_cod_acti,
-                         act_cod_empr, act_cod_sucu, met_porc_met, metd_val_metd, met_num_dias,
-                         metd_cod_reva, met_estado)
-                        values
-                        (" . intval($periodo_dt->format('Y')) . ", '$fecha_desde', '$fecha_hasta', $empresa, $codigo_activo,
-                         $empresa, $sucursal, $porcentaje, $monto, $dias, 0, 'P')";
+                    if ($tiene_estado) {
+                        $sql_insert = "insert into saemet
+                            (met_anio_met, metd_des_fech, metd_has_fech, metd_cod_empr, metd_cod_acti,
+                             act_cod_empr, act_cod_sucu, met_porc_met, metd_val_metd, met_num_dias,
+                             metd_cod_reva, met_estado)
+                            values
+                            (" . intval($periodo_dt->format('Y')) . ", '$fecha_desde', '$fecha_hasta', $empresa, $codigo_activo,
+                             $empresa, $sucursal, $porcentaje, $monto, $dias, 0, 'P')";
+                    } else {
+                        $sql_insert = "insert into saemet
+                            (met_anio_met, metd_des_fech, metd_has_fech, metd_cod_empr, metd_cod_acti,
+                             act_cod_empr, act_cod_sucu, met_porc_met, metd_val_metd, met_num_dias,
+                             metd_cod_reva)
+                            values
+                            (" . intval($periodo_dt->format('Y')) . ", '$fecha_desde', '$fecha_hasta', $empresa, $codigo_activo,
+                             $empresa, $sucursal, $porcentaje, $monto, $dias, 0)";
+                    }
                     $oIfx->QueryT($sql_insert);
                 }
 
@@ -430,16 +450,18 @@ function listarPlan($aForm = '')
     $empresa = $contexto['empresa'];
     $sucursal = $contexto['sucursal'];
     $filtro = $contexto['filtro'];
+    $tiene_estado = plan_tiene_met_estado($oIfx);
 
     $oReturn = new xajaxResponse();
 
+    $campo_estado = $tiene_estado ? "coalesce(saemet.met_estado, 'P')" : "'P'";
     $sql = "select saeact.act_cod_act,
                    saeact.act_clave_act,
                    saeact.act_nom_act,
                    saemet.metd_des_fech,
                    saemet.metd_has_fech,
                    saemet.metd_val_metd,
-                   coalesce(saemet.met_estado, 'P') as met_estado
+                   $campo_estado as met_estado
             from saemet
             join saeact on saeact.act_cod_act = saemet.metd_cod_acti
             where saemet.metd_cod_empr = $empresa
@@ -516,6 +538,7 @@ function prorrogarPlan($aForm = '')
     $activo_desde = $contexto['activo_desde'];
     $activo_hasta = $contexto['activo_hasta'];
     $meses_prorroga = intval($aForm['meses_prorroga']);
+    $tiene_estado = plan_tiene_met_estado($oIfx);
 
     if (empty($activo_desde) || $activo_desde === '0' || $activo_desde !== $activo_hasta) {
         $oReturn->assign('divPlanMensajes', 'innerHTML', plan_mensaje_alerta('Debe seleccionar un activo específico para prorrogar.'));
@@ -560,6 +583,12 @@ function prorrogarPlan($aForm = '')
     $inicio_mes_actual = new DateTime(date('Y-m-01'));
     if ($ultima_dt >= $inicio_mes_actual) {
         $oReturn->assign('divPlanMensajes', 'innerHTML', plan_mensaje_alerta('El plan aún no termina. No se puede prorrogar.'));
+        $oReturn->script("document.getElementById('divPlanMensajes').style.display = 'block';");
+        return $oReturn;
+    }
+
+    if (!$tiene_estado) {
+        $oReturn->assign('divPlanMensajes', 'innerHTML', plan_mensaje_alerta('La columna met_estado no existe en saemet. No se puede prorrogar sin estado del plan.'));
         $oReturn->script("document.getElementById('divPlanMensajes').style.display = 'block';");
         return $oReturn;
     }
@@ -647,6 +676,7 @@ function validarPlan($aForm = '')
     $activo_desde = $contexto['activo_desde'];
     $activo_hasta = $contexto['activo_hasta'];
     $filtro = $contexto['filtro'];
+    $tiene_estado = plan_tiene_met_estado($oIfx);
 
     $sql_activos = "select act_cod_act, act_val_comp, act_vres_act, act_clave_act
                     from saeact
@@ -686,21 +716,24 @@ function validarPlan($aForm = '')
                     $mensajes[] = "El activo {$clave_activo} tiene periodos con monto 0.";
                 }
 
-                $sql_ejecutado = "select count(*) as total
-                                  from saemet
-                                  where metd_cod_empr = $empresa
-                                  and metd_cod_acti = $codigo_activo
-                                  and met_estado = 'E'";
-                $ejecutados = intval(consulta_string($sql_ejecutado, 'total', $oIfx, 0));
-                if ($ejecutados > 0) {
-                    $mensajes[] = "El activo {$clave_activo} tiene periodos ejecutados.";
+                if ($tiene_estado) {
+                    $sql_ejecutado = "select count(*) as total
+                                      from saemet
+                                      where metd_cod_empr = $empresa
+                                      and metd_cod_acti = $codigo_activo
+                                      and met_estado = 'E'";
+                    $ejecutados = intval(consulta_string($sql_ejecutado, 'total', $oIfx, 0));
+                    if ($ejecutados > 0) {
+                        $mensajes[] = "El activo {$clave_activo} tiene periodos ejecutados.";
+                    }
+                } else {
+                    $mensajes[] = "La columna met_estado no existe en saemet; no se puede validar periodos ejecutados/anulados.";
                 }
 
                 $sql_total_plan = "select coalesce(sum(metd_val_metd), 0) as total_plan
                                    from saemet
                                    where metd_cod_empr = $empresa
-                                   and metd_cod_acti = $codigo_activo
-                                   and (met_estado is null or met_estado <> 'A')";
+                                   and metd_cod_acti = $codigo_activo";
                 $total_plan = floatval(consulta_string($sql_total_plan, 'total_plan', $oIfx, 0));
                 if (round($total_plan, 2) !== round($valor_neto, 2)) {
                     $mensajes[] = "El activo {$clave_activo} tiene inconsistencias: total plan {$total_plan} vs valor neto {$valor_neto}.";
