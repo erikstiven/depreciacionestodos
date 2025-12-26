@@ -933,9 +933,9 @@ function f_cargar_datos($aForm){
 					//$oReturn->alert($sql);
 			if($oIfx->Query($sql))	{
 				if ($oIfx->NumFilas() > 0){
-					$codigoGrupo = $oIfx->f('gact_cod_gact');
+					$codigoGrupo = trim($oIfx->f('gact_cod_gact'));
 					$oReturn->assign('gact_cod_gact', 'value', $codigoGrupo);
-					$codigoSubGrupo = $oIfx->f('sgac_cod_sgac');
+					$codigoSubGrupo = trim($oIfx->f('sgac_cod_sgac'));
 					cargar_lista_subgrupos($oReturn, $oIfx, $idempresa, $codigoGrupo, $codigoSubGrupo);
 					$oReturn->assign('tdep_cod_tdep', 'value',$oIfx->f('tdep_cod_tdep'));
 					
@@ -1060,6 +1060,13 @@ function f_filtro_subgrupo($aForm, $data){
 
 function cargar_lista_subgrupos($oReturn, $oIfx, $empresa, $codigoGrupo, $codigoSubgrupo){
 	// DATOS DEL ACTIVO
+	$codigoGrupo = trim($codigoGrupo);
+	$codigoSubgrupo = trim($codigoSubgrupo);
+	if ($codigoGrupo === '') {
+		$oReturn->script('eliminar_lista_subgrupo();');
+		$oReturn->assign('sgac_cod_sgac', 'value', '');
+		return;
+	}
 	$sql = "select sgac_cod_sgac, sgac_des_sgac 
 			 from saesgac where sgac_cod_empr = '$empresa'                                                                  
 			 and gact_cod_gact = '$codigoGrupo'";
