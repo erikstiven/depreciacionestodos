@@ -53,21 +53,17 @@ function f_filtro_activos_desde($aForm)
     $oIfx->Conectar();
 
     $oReturn = new xajaxResponse();
-    $idempresa = $_SESSION['U_EMPRESA'];
-    $idsucursal = $_SESSION['U_SUCURSAL'];
     $empresa = $aForm['empresa'];
     $sucursal = $aForm['sucursal'];
     $subgrupo = $aForm['cod_subgrupo'];
     if (empty($empresa)) {
-        $empresa = $idempresa;
+        $empresa = $_SESSION['U_EMPRESA'];
     }
-    if (empty($sucursal)) {
-        $sucursal = $idsucursal;
-    }
+    $filtro_sucursal_activo = plan_filtro_sucursal_activo($sucursal);
     $sql = "select act_cod_act, act_nom_act, act_clave_act
             from saeact
             where act_cod_empr = '$empresa'
-            and act_cod_sucu = '$sucursal'
+            $filtro_sucursal_activo
             and sgac_cod_sgac  = '$subgrupo'
             order by act_cod_act";
     $i = 1;
@@ -95,21 +91,17 @@ function f_filtro_activos_hasta($aForm)
 
     $oReturn = new xajaxResponse();
 
-    $idempresa = $_SESSION['U_EMPRESA'];
-    $idsucursal = $_SESSION['U_SUCURSAL'];
     $empresa = $aForm['empresa'];
     $sucursal = $aForm['sucursal'];
     $subgrupo = $aForm['cod_subgrupo'];
     if (empty($empresa)) {
-        $empresa = $idempresa;
+        $empresa = $_SESSION['U_EMPRESA'];
     }
-    if (empty($sucursal)) {
-        $sucursal = $idsucursal;
-    }
+    $filtro_sucursal_activo = plan_filtro_sucursal_activo($sucursal);
     $sql = "select act_cod_act, act_nom_act, act_clave_act
             from saeact
             where act_cod_empr = '$empresa'
-            and act_cod_sucu = '$sucursal'
+            $filtro_sucursal_activo
             and sgac_cod_sgac  = '$subgrupo'
             order by act_cod_act";
     $i = 1;
