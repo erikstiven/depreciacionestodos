@@ -51,6 +51,15 @@
             }
         }
 
+        function generarPlanFaltante(){
+            if (document.getElementById("btnGenerarPlanFaltante").getAttribute("data-disabled") === "true") {
+                return;
+            }
+            if(ProcesarFormulario() == true){
+                xajax_generarPlan(xajax.getFormValues("form1"));
+            }
+        }
+
         function listarPlan(){
             xajax_listarPlan(xajax.getFormValues("form1"));
         }
@@ -342,6 +351,22 @@
                         </div>
                         <div class="row" style="margin-top: 10px;">
                             <div class="col-md-12">
+                                <div id="btnConsultarPlan" class="btn btn-primary btn-sm" data-disabled="false" onclick="consultarPlan();" style="width: 100%">
+                                    <span class="glyphicon glyphicon-search"></span>
+                                    Consultar Plan
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row" style="margin-top: 10px;">
+                            <div class="col-md-12">
+                                <div id="btnGenerarPlanFaltante" class="btn btn-default btn-sm" data-disabled="false" onclick="generarPlanFaltante();" style="width: 100%; display: none;">
+                                    <span class="glyphicon glyphicon-plus"></span>
+                                    Generar Plan Faltante
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row" style="margin-top: 10px;">
+                            <div class="col-md-12">
                                 <div class="checkbox" style="margin-top: 0;">
                                     <label title="Funcionalidad pendiente">
                                         <input type="checkbox" id="aplicar_prorroga" name="aplicar_prorroga" value="1" onclick="toggleProrroga();" disabled>
@@ -358,14 +383,6 @@
                                             Aplicar Prórroga
                                         </button>
                                     </span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row" style="margin-top: 10px;">
-                            <div class="col-md-12">
-                                <div id="btnConsultarPlan" class="btn btn-primary btn-sm" data-disabled="false" onclick="consultarPlan();" style="width: 100%">
-                                    <span class="glyphicon glyphicon-search"></span>
-                                    Consultar Plan
                                 </div>
                             </div>
                         </div>
