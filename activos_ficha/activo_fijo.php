@@ -245,6 +245,10 @@
         function f_filtro_subgrupo(data){
             xajax_f_filtro_subgrupo(xajax.getFormValues("form1"), data);           
         }
+        function cargar_subgrupo_por_grupo(grupo, subgrupo){
+            document.getElementById("gact_cod_gact").value = grupo;
+            f_filtro_subgrupo(subgrupo);
+        }
 		function lista_reporte_index(codigoActivo){
 			    xajax_lista_reporte_index(codigoActivo);          
 		}

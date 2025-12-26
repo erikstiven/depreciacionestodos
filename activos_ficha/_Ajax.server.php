@@ -933,9 +933,10 @@ function f_cargar_datos($aForm){
 					//$oReturn->alert($sql);
 			if($oIfx->Query($sql))	{
 				if ($oIfx->NumFilas() > 0){
-					$oReturn->assign('gact_cod_gact', 'value',$oIfx->f('gact_cod_gact'));					
+					$codigoGrupo = $oIfx->f('gact_cod_gact');
+					$oReturn->assign('gact_cod_gact', 'value', $codigoGrupo);
 					$codigoSubGrupo = $oIfx->f('sgac_cod_sgac');
-					$oReturn->script("f_filtro_subgrupo('".$codigoSubGrupo."')");									
+					$oReturn->script("cargar_subgrupo_por_grupo('".addslashes($codigoGrupo)."', '".addslashes($codigoSubGrupo)."')");
 					$oReturn->assign('tdep_cod_tdep', 'value',$oIfx->f('tdep_cod_tdep'));
 					
 					if ($oIfx->f('act_est_reva') == 'R'){
