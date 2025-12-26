@@ -30,6 +30,7 @@ function f_filtro_sucursal($aForm, $data)
     $i = 1;
     if ($oIfx->Query($sql)) {
         $oReturn->script('eliminar_lista_sucursal();');
+        $oReturn->script("anadir_elemento_sucursal(" . $i++ . ", 'ALL', 'TODAS')");
         if ($oIfx->NumFilas() > 0) {
             do {
                 $oReturn->script(('anadir_elemento_sucursal(' . $i++ . ',\'' . $oIfx->f('sucu_cod_sucu') . '\', \'' . $oIfx->f('sucu_nom_sucu') . '\' )'));
@@ -212,13 +213,9 @@ function plan_obtener_contexto($aForm)
     $activo_hasta = $aForm['cod_activo_hasta'];
 
     $idempresa = $_SESSION['U_EMPRESA'];
-    $idsucursal = $_SESSION['U_SUCURSAL'];
 
     if (empty($empresa)) {
         $empresa = $idempresa;
-    }
-    if (empty($sucursal)) {
-        $sucursal = $idsucursal;
     }
 
     $filtro = '';
@@ -251,6 +248,22 @@ function plan_filtros_completos($aForm)
         && !empty($aForm['cod_subgrupo']) && $aForm['cod_subgrupo'] !== '0'
         && !empty($aForm['cod_activo_desde']) && $aForm['cod_activo_desde'] !== '0'
         && !empty($aForm['cod_activo_hasta']) && $aForm['cod_activo_hasta'] !== '0';
+}
+
+function plan_filtro_sucursal_activo($sucursal)
+{
+    if (empty($sucursal) || $sucursal === 'ALL' || $sucursal === '0') {
+        return '';
+    }
+    return " and saeact.act_cod_sucu = $sucursal";
+}
+
+function plan_filtro_sucursal_plan($sucursal)
+{
+    if (empty($sucursal) || $sucursal === 'ALL' || $sucursal === '0') {
+        return '';
+    }
+    return " and saemet.act_cod_sucu = $sucursal";
 }
 
 function plan_tiene_met_estado($oIfx)
@@ -302,6 +315,8 @@ function generarPlan($aForm = '')
     $filtro = $contexto['filtro'];
     $tiene_estado = plan_tiene_met_estado($oIfx);
     $tipos_dep = plan_tipos_depreciacion($oIfx, $empresa);
+    $filtro_sucursal_activo = plan_filtro_sucursal_activo($sucursal);
+    $filtro_sucursal_plan = plan_filtro_sucursal_plan($sucursal);
 
     $sql_activos = "select saeact.act_cod_act,
                            saeact.act_clave_act,
@@ -311,17 +326,18 @@ function generarPlan($aForm = '')
                            saeact.act_fcmp_act,
                            saeact.act_fdep_act,
                            saeact.act_vutil_act,
-                           saeact.tdep_cod_tdep
+                           saeact.tdep_cod_tdep,
+                           saeact.act_cod_sucu
                     from saeact
                     where act_cod_empr = $empresa
-                    and act_cod_sucu = $sucursal
+                    $filtro_sucursal_activo
                     and act_ext_act = 1
                     $filtro
                     and not exists (
                         select 1 from saemet
                         where metd_cod_empr = $empresa
                         and metd_cod_acti = saeact.act_cod_act
-                        and act_cod_sucu = $sucursal
+                        $filtro_sucursal_plan
                     )
                     order by act_cod_act";
 
@@ -338,6 +354,7 @@ function generarPlan($aForm = '')
                 $valor_compra = floatval($oIfx->f('act_val_comp'));
                 $valor_residual = floatval($oIfx->f('act_vres_act'));
                 $fecha_inicio = $oIfx->f('act_fdep_act');
+                $sucursal_activo = $oIfx->f('act_cod_sucu');
                 if (empty($fecha_inicio)) {
                     $fecha_inicio = $oIfx->f('act_fcmp_act');
                 }
@@ -399,7 +416,7 @@ function generarPlan($aForm = '')
                     $columnas = "met_anio_met, metd_des_fech, metd_has_fech, metd_cod_empr, metd_cod_acti,
                                  act_cod_empr, act_cod_sucu, met_porc_met, metd_val_metd, met_num_dias, metd_cod_reva";
                     $valores = intval($periodo_dt->format('Y')) . ", '$fecha_desde', '$fecha_hasta', $empresa, $codigo_activo,
-                                $empresa, $sucursal, $porcentaje, $monto, $dias, 0";
+                                $empresa, $sucursal_activo, $porcentaje, $monto, $dias, 0";
                     if ($tiene_estado) {
                         $columnas .= ", met_estado";
                         $valores .= ", 'P'";
@@ -464,6 +481,7 @@ function listarPlan($aForm = '')
     $sucursal = $contexto['sucursal'];
     $filtro = $contexto['filtro'];
     $tiene_estado = plan_tiene_met_estado($oIfx);
+    $filtro_sucursal_plan = plan_filtro_sucursal_plan($sucursal);
 
     $campo_estado = $tiene_estado ? "coalesce(saemet.met_estado, 'P')" : "'P'";
     $sql = "select saeact.act_cod_act,
@@ -476,7 +494,7 @@ function listarPlan($aForm = '')
             from saemet
             join saeact on saeact.act_cod_act = saemet.metd_cod_acti
             where saemet.metd_cod_empr = $empresa
-            and saemet.act_cod_sucu = $sucursal
+            $filtro_sucursal_plan
             $filtro
             order by saeact.act_cod_act, saemet.metd_has_fech";
 
@@ -551,6 +569,8 @@ function prorrogarPlan($aForm = '')
     $activo_hasta = $contexto['activo_hasta'];
     $meses_prorroga = intval($aForm['meses_prorroga']);
     $tiene_estado = plan_tiene_met_estado($oIfx);
+    $filtro_sucursal_activo = plan_filtro_sucursal_activo($sucursal);
+    $filtro_sucursal_plan = plan_filtro_sucursal_plan($sucursal);
 
     if (empty($activo_desde) || $activo_desde === '0' || $activo_desde !== $activo_hasta) {
         $oReturn->assign('divPlanMensajes', 'innerHTML', plan_mensaje_alerta('Debe seleccionar un activo específico para prorrogar.'));
@@ -568,7 +588,7 @@ function prorrogarPlan($aForm = '')
                     from saeact
                     where act_cod_act = $activo_desde
                     and act_cod_empr = $empresa
-                    and act_cod_sucu = $sucursal";
+                    $filtro_sucursal_activo";
     $oIfx->Query($sql_activo);
     if ($oIfx->NumFilas() === 0) {
         $oReturn->assign('divPlanMensajes', 'innerHTML', plan_mensaje_alerta('Activo no encontrado para prórroga.'));
@@ -584,7 +604,7 @@ function prorrogarPlan($aForm = '')
                    from saemet
                    where metd_cod_empr = $empresa
                    and metd_cod_acti = $activo_desde
-                   and act_cod_sucu = $sucursal";
+                   $filtro_sucursal_plan";
     $ultima_fecha = consulta_string($sql_ultima, 'ultima_fecha', $oIfx, 0);
     if (empty($ultima_fecha)) {
         $oReturn->assign('divPlanMensajes', 'innerHTML', plan_mensaje_alerta('El activo no tiene plan para prorrogar.'));
@@ -610,7 +630,7 @@ function prorrogarPlan($aForm = '')
                       from saemet
                       where metd_cod_empr = $empresa
                       and metd_cod_acti = $activo_desde
-                      and act_cod_sucu = $sucursal
+                      $filtro_sucursal_plan
                       and met_estado = 'E'";
     $ejecutado = floatval(consulta_string($sql_ejecutado, 'ejecutado', $oIfx, 0));
 
@@ -693,10 +713,13 @@ function validarPlan($aForm = '')
     $filtro = $contexto['filtro'];
     $tiene_estado = plan_tiene_met_estado($oIfx);
 
+    $filtro_sucursal_activo = plan_filtro_sucursal_activo($sucursal);
+    $filtro_sucursal_plan = plan_filtro_sucursal_plan($sucursal);
+
     $sql_activos = "select act_cod_act, act_val_comp, act_vres_act, act_clave_act, act_nom_act
                     from saeact
                     where act_cod_empr = $empresa
-                    and act_cod_sucu = $sucursal
+                    $filtro_sucursal_activo
                     and act_ext_act = 1
                     $filtro
                     order by act_cod_act";
@@ -718,7 +741,7 @@ function validarPlan($aForm = '')
                             from saemet
                             where metd_cod_empr = $empresa
                             and metd_cod_acti = $codigo_activo
-                            and act_cod_sucu = $sucursal";
+                            $filtro_sucursal_plan";
                 $plan_existe = intval(consulta_string($sql_plan, 'total', $oIfx, 0));
                 if ($plan_existe === 0) {
                     $mensajes[] = "El activo {$clave_activo} - {$nombre_activo} no tiene plan de depreciación generado.";
@@ -730,7 +753,7 @@ function validarPlan($aForm = '')
                             from saemet
                             where metd_cod_empr = $empresa
                             and metd_cod_acti = $codigo_activo
-                            and act_cod_sucu = $sucursal
+                            $filtro_sucursal_plan
                             and metd_val_metd = 0";
                 $ceros = intval(consulta_string($sql_ceros, 'total', $oIfx, 0));
                 if ($ceros > 0) {
@@ -742,7 +765,7 @@ function validarPlan($aForm = '')
                                       from saemet
                                       where metd_cod_empr = $empresa
                                       and metd_cod_acti = $codigo_activo
-                                      and act_cod_sucu = $sucursal
+                                      $filtro_sucursal_plan
                                       and met_estado = 'E'";
                     $ejecutados = intval(consulta_string($sql_ejecutado, 'total', $oIfx, 0));
                     if ($ejecutados > 0) {
@@ -759,7 +782,7 @@ function validarPlan($aForm = '')
                                    from saemet
                                    where metd_cod_empr = $empresa
                                    and metd_cod_acti = $codigo_activo
-                                   and act_cod_sucu = $sucursal";
+                                   $filtro_sucursal_plan";
                 $total_plan = floatval(consulta_string($sql_total_plan, 'total_plan', $oIfx, 0));
                 if (round($total_plan, 2) !== round($valor_neto, 2)) {
                     $mensajes[] = "El activo {$clave_activo} tiene inconsistencias: total plan {$total_plan} vs valor neto {$valor_neto}.";
@@ -770,7 +793,7 @@ function validarPlan($aForm = '')
                                    from saemet
                                    where metd_cod_empr = $empresa
                                    and metd_cod_acti = $codigo_activo
-                                   and act_cod_sucu = $sucursal";
+                                   $filtro_sucursal_plan";
                     $ultima_fecha = consulta_string($sql_ultima, 'ultima_fecha', $oIfx, 0);
                     $ultima_dt = $ultima_fecha ? DateTime::createFromFormat('Y-m-d', $ultima_fecha) : null;
                     $inicio_mes_actual = new DateTime(date('Y-m-01'));
