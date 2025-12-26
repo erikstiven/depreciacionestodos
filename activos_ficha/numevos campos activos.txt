@@ -1,0 +1,16 @@
+-- 28-05-2019
+-- XAVEIR REYES
+-- CAMPOS PARA INFROMACION DE VEHICULOS - FLOTAS
+
+-- PARA VER SI UN ACTIVO ES FLOTA 
+alter table saeact add act_flo_act char(1) default 'N';
+
+-- NUMERO DE PLACA
+alter table saeact add act_pla_act varchar(20);
+
+-- KILOMETRAJE
+alter table saeact add act_kms_act decimal(18,2);
+
+-- AÑO DE FABRICACION
+alter table saeact add act_ani_act integer;
+
