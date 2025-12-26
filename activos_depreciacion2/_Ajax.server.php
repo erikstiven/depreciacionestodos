@@ -397,7 +397,7 @@ function f_filtro_subgrupo($aForm = '')
     }
 
 
-    // DATOS DEL ACTIVO s
+    // DATOS DEL ACTIVO
     $sql = "select sgac_cod_sgac, sgac_des_sgac 
 			 from saesgac where sgac_cod_empr = $empresa                                                                  
 			 and gact_cod_gact = '$codigoGrupo'
