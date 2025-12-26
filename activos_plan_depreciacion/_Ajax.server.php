@@ -321,6 +321,7 @@ function generarPlan($aForm = '')
                         select 1 from saemet
                         where metd_cod_empr = $empresa
                         and metd_cod_acti = saeact.act_cod_act
+                        and act_cod_sucu = $sucursal
                     )
                     order by act_cod_act";
 
@@ -582,7 +583,8 @@ function prorrogarPlan($aForm = '')
     $sql_ultima = "select max(metd_has_fech) as ultima_fecha
                    from saemet
                    where metd_cod_empr = $empresa
-                   and metd_cod_acti = $activo_desde";
+                   and metd_cod_acti = $activo_desde
+                   and act_cod_sucu = $sucursal";
     $ultima_fecha = consulta_string($sql_ultima, 'ultima_fecha', $oIfx, 0);
     if (empty($ultima_fecha)) {
         $oReturn->assign('divPlanMensajes', 'innerHTML', plan_mensaje_alerta('El activo no tiene plan para prorrogar.'));
@@ -608,6 +610,7 @@ function prorrogarPlan($aForm = '')
                       from saemet
                       where metd_cod_empr = $empresa
                       and metd_cod_acti = $activo_desde
+                      and act_cod_sucu = $sucursal
                       and met_estado = 'E'";
     $ejecutado = floatval(consulta_string($sql_ejecutado, 'ejecutado', $oIfx, 0));
 
@@ -714,7 +717,8 @@ function validarPlan($aForm = '')
                 $sql_plan = "select count(*) as total
                             from saemet
                             where metd_cod_empr = $empresa
-                            and metd_cod_acti = $codigo_activo";
+                            and metd_cod_acti = $codigo_activo
+                            and act_cod_sucu = $sucursal";
                 $plan_existe = intval(consulta_string($sql_plan, 'total', $oIfx, 0));
                 if ($plan_existe === 0) {
                     $mensajes[] = "El activo {$clave_activo} - {$nombre_activo} no tiene plan de depreciación generado.";
@@ -726,6 +730,7 @@ function validarPlan($aForm = '')
                             from saemet
                             where metd_cod_empr = $empresa
                             and metd_cod_acti = $codigo_activo
+                            and act_cod_sucu = $sucursal
                             and metd_val_metd = 0";
                 $ceros = intval(consulta_string($sql_ceros, 'total', $oIfx, 0));
                 if ($ceros > 0) {
@@ -737,6 +742,7 @@ function validarPlan($aForm = '')
                                       from saemet
                                       where metd_cod_empr = $empresa
                                       and metd_cod_acti = $codigo_activo
+                                      and act_cod_sucu = $sucursal
                                       and met_estado = 'E'";
                     $ejecutados = intval(consulta_string($sql_ejecutado, 'total', $oIfx, 0));
                     if ($ejecutados > 0) {
@@ -752,7 +758,8 @@ function validarPlan($aForm = '')
                 $sql_total_plan = "select coalesce(sum(metd_val_metd), 0) as total_plan
                                    from saemet
                                    where metd_cod_empr = $empresa
-                                   and metd_cod_acti = $codigo_activo";
+                                   and metd_cod_acti = $codigo_activo
+                                   and act_cod_sucu = $sucursal";
                 $total_plan = floatval(consulta_string($sql_total_plan, 'total_plan', $oIfx, 0));
                 if (round($total_plan, 2) !== round($valor_neto, 2)) {
                     $mensajes[] = "El activo {$clave_activo} tiene inconsistencias: total plan {$total_plan} vs valor neto {$valor_neto}.";
@@ -762,7 +769,8 @@ function validarPlan($aForm = '')
                     $sql_ultima = "select max(metd_has_fech) as ultima_fecha
                                    from saemet
                                    where metd_cod_empr = $empresa
-                                   and metd_cod_acti = $codigo_activo";
+                                   and metd_cod_acti = $codigo_activo
+                                   and act_cod_sucu = $sucursal";
                     $ultima_fecha = consulta_string($sql_ultima, 'ultima_fecha', $oIfx, 0);
                     $ultima_dt = $ultima_fecha ? DateTime::createFromFormat('Y-m-d', $ultima_fecha) : null;
                     $inicio_mes_actual = new DateTime(date('Y-m-01'));
