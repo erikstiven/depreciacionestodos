@@ -74,8 +74,6 @@
 		
         function f_filtro_sucursal(data){
             xajax_f_filtro_sucursal(xajax.getFormValues("form1"), data);
-            listarPlan();
-            validarPlan();
         }
    
         function eliminar_lista_sucursal() {
@@ -95,8 +93,6 @@
 
 		function f_filtro_grupo(data){
             xajax_f_filtro_grupo(xajax.getFormValues("form1"), data);
-            listarPlan();
-            validarPlan();
         }
    
 		function eliminar_lista_grupo() {
@@ -116,8 +112,6 @@
 		
 		function f_filtro_subgrupo(){         
             xajax_f_filtro_subgrupo(xajax.getFormValues("form1"));
-            listarPlan();
-            validarPlan();
         }
    
 		function eliminar_lista_subgrupo() {
@@ -139,8 +133,6 @@
         }
 		function f_filtro_activos_desde(){
             xajax_f_filtro_activos_desde(xajax.getFormValues("form1"));           
-            listarPlan();
-            validarPlan();
         }
    
 		function eliminar_lista_activo_desde() {
@@ -162,8 +154,6 @@
         }
 		function f_filtro_activos_hasta(data){
             xajax_f_filtro_activos_hasta(xajax.getFormValues("form1"));           
-            listarPlan();
-            validarPlan();
         }
    
 		function eliminar_lista_activo_hasta() {
@@ -314,14 +304,14 @@
                 </div>
                 <input type="hidden" id="meses_prorroga" name="meses_prorroga" value="">
                 <div class="col-md-12">
-                    <div id="divPlanMensajes" style="margin-top: 15px;"></div>
+                    <div id="divPlanMensajes" style="margin-top: 15px; display: none;"></div>
                     <div id="divPlanTabla" class="table-responsive" style="margin-top: 10px;"></div>
                 </div>
             </form>
         </div>
     </body>
          
-    <script>genera_cabecera_formulario(); generaSelect2(); listarPlan(); validarPlan();</script> 
+    <script>genera_cabecera_formulario(); generaSelect2();</script> 
     <? /*     * ***************************************************************** */ ?>
     <? /* NO MODIFICAR ESTA SECCION */ ?>
 <? } ?>

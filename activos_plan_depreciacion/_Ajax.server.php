@@ -1,6 +1,9 @@
 <?php
 
 require("_Ajax.comun.php"); // No modificar esta linea
+
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // S E R V I D O R   A J A X //
   :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
@@ -240,6 +243,16 @@ function plan_obtener_contexto($aForm)
     ];
 }
 
+function plan_filtros_completos($aForm)
+{
+    return !empty($aForm['empresa'])
+        && !empty($aForm['sucursal'])
+        && !empty($aForm['cod_grupo']) && $aForm['cod_grupo'] !== '0'
+        && !empty($aForm['cod_subgrupo']) && $aForm['cod_subgrupo'] !== '0'
+        && !empty($aForm['cod_activo_desde']) && $aForm['cod_activo_desde'] !== '0'
+        && !empty($aForm['cod_activo_hasta']) && $aForm['cod_activo_hasta'] !== '0';
+}
+
 function generarPlan($aForm = '')
 {
     global $DSN, $DSN_Ifx;
@@ -257,6 +270,10 @@ function generarPlan($aForm = '')
     $oIfxA->Conectar();
 
     $oReturn = new xajaxResponse();
+
+    if (!plan_filtros_completos($aForm)) {
+        return $oReturn;
+    }
 
     $contexto = plan_obtener_contexto($aForm);
     $empresa = $contexto['empresa'];
@@ -384,6 +401,7 @@ function generarPlan($aForm = '')
     }
 
     $oReturn->assign('divPlanMensajes', 'innerHTML', $mensaje);
+    $oReturn->script("document.getElementById('divPlanMensajes').style.display = 'block';");
     $oReturn->script('listarPlan();');
     $oReturn->script('validarPlan();');
     return $oReturn;
@@ -400,6 +418,13 @@ function listarPlan($aForm = '')
     $oIfx = new Dbo();
     $oIfx->DSN = $DSN_Ifx;
     $oIfx->Conectar();
+
+    if (!plan_filtros_completos($aForm)) {
+        $oReturn->assign('divPlanTabla', 'innerHTML', '');
+        $oReturn->assign('divPlanMensajes', 'innerHTML', '');
+        $oReturn->script("document.getElementById('divPlanMensajes').style.display = 'none';");
+        return $oReturn;
+    }
 
     $contexto = plan_obtener_contexto($aForm);
     $empresa = $contexto['empresa'];
@@ -481,6 +506,10 @@ function prorrogarPlan($aForm = '')
 
     $oReturn = new xajaxResponse();
 
+    if (!plan_filtros_completos($aForm)) {
+        return $oReturn;
+    }
+
     $contexto = plan_obtener_contexto($aForm);
     $empresa = $contexto['empresa'];
     $sucursal = $contexto['sucursal'];
@@ -490,11 +519,13 @@ function prorrogarPlan($aForm = '')
 
     if (empty($activo_desde) || $activo_desde === '0' || $activo_desde !== $activo_hasta) {
         $oReturn->assign('divPlanMensajes', 'innerHTML', plan_mensaje_alerta('Debe seleccionar un activo específico para prorrogar.'));
+        $oReturn->script("document.getElementById('divPlanMensajes').style.display = 'block';");
         return $oReturn;
     }
 
     if ($meses_prorroga <= 0) {
         $oReturn->assign('divPlanMensajes', 'innerHTML', plan_mensaje_alerta('Debe indicar los meses a prorrogar.'));
+        $oReturn->script("document.getElementById('divPlanMensajes').style.display = 'block';");
         return $oReturn;
     }
 
@@ -506,6 +537,7 @@ function prorrogarPlan($aForm = '')
     $oIfx->Query($sql_activo);
     if ($oIfx->NumFilas() === 0) {
         $oReturn->assign('divPlanMensajes', 'innerHTML', plan_mensaje_alerta('Activo no encontrado para prórroga.'));
+        $oReturn->script("document.getElementById('divPlanMensajes').style.display = 'block';");
         return $oReturn;
     }
     $oIfx->SiguienteRegistro();
@@ -520,6 +552,7 @@ function prorrogarPlan($aForm = '')
     $ultima_fecha = consulta_string($sql_ultima, 'ultima_fecha', $oIfx, 0);
     if (empty($ultima_fecha)) {
         $oReturn->assign('divPlanMensajes', 'innerHTML', plan_mensaje_alerta('El activo no tiene plan para prorrogar.'));
+        $oReturn->script("document.getElementById('divPlanMensajes').style.display = 'block';");
         return $oReturn;
     }
 
@@ -527,6 +560,7 @@ function prorrogarPlan($aForm = '')
     $inicio_mes_actual = new DateTime(date('Y-m-01'));
     if ($ultima_dt >= $inicio_mes_actual) {
         $oReturn->assign('divPlanMensajes', 'innerHTML', plan_mensaje_alerta('El plan aún no termina. No se puede prorrogar.'));
+        $oReturn->script("document.getElementById('divPlanMensajes').style.display = 'block';");
         return $oReturn;
     }
 
@@ -541,12 +575,14 @@ function prorrogarPlan($aForm = '')
     $pendiente = round($valor_neto - $ejecutado, 2);
     if ($pendiente <= 0) {
         $oReturn->assign('divPlanMensajes', 'innerHTML', plan_mensaje_alerta('No hay saldo pendiente para prorrogar.'));
+        $oReturn->script("document.getElementById('divPlanMensajes').style.display = 'block';");
         return $oReturn;
     }
 
     $monto_mensual = round($pendiente / $meses_prorroga, 2);
     if ($monto_mensual <= 0) {
         $oReturn->assign('divPlanMensajes', 'innerHTML', plan_mensaje_alerta('La depreciación mensual es 0. Revise la prórroga.'));
+        $oReturn->script("document.getElementById('divPlanMensajes').style.display = 'block';");
         return $oReturn;
     }
 
@@ -578,6 +614,7 @@ function prorrogarPlan($aForm = '')
 
     $mensaje = plan_mensaje_ok("Prórroga aplicada al activo {$clave_activo} por {$meses_prorroga} meses.");
     $oReturn->assign('divPlanMensajes', 'innerHTML', $mensaje);
+    $oReturn->script("document.getElementById('divPlanMensajes').style.display = 'block';");
     $oReturn->script('listarPlan();');
     $oReturn->script('validarPlan();');
     return $oReturn;
@@ -596,6 +633,13 @@ function validarPlan($aForm = '')
     $oIfx->Conectar();
 
     $oReturn = new xajaxResponse();
+
+    if (!plan_filtros_completos($aForm)) {
+        $oReturn->assign('divPlanMensajes', 'innerHTML', '');
+        $oReturn->script("document.getElementById('divPlanMensajes').style.display = 'none';");
+        $oReturn->script("document.getElementById('btnProrrogarPlan').style.display = 'none';");
+        return $oReturn;
+    }
 
     $contexto = plan_obtener_contexto($aForm);
     $empresa = $contexto['empresa'];
@@ -688,6 +732,7 @@ function validarPlan($aForm = '')
     }
 
     $oReturn->assign('divPlanMensajes', 'innerHTML', $mensaje);
+    $oReturn->script("document.getElementById('divPlanMensajes').style.display = 'block';");
     if ($puede_prorrogar) {
         $oReturn->script("document.getElementById('btnProrrogarPlan').style.display = 'inline-block';");
     } else {
