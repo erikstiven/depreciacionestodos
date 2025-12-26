@@ -1,0 +1,164 @@
+Contexto
+
+Existe un módulo funcional y probado llamado activos_depreciacion, el cual ejecuta correctamente el cálculo de depreciación utilizando un único período (Año + Mes) y los siguientes filtros:
+
+Empresa
+
+Sucursal
+
+Año
+
+Mes
+
+Grupo
+
+Subgrupo
+
+Activo Desde
+
+Activo Hasta
+
+Este módulo sirve como referencia base y comportamiento esperado.
+
+Actualmente se está desarrollando un segundo módulo llamado activos_depreciacion2, cuyo objetivo es extender la funcionalidad para permitir el cálculo de depreciación en un rango de períodos, manteniendo el mismo criterio de negocio y resultados coherentes con el módulo base.
+
+Diferencias clave entre módulos
+Módulo base (activos_depreciacion)
+
+Maneja un solo período contable
+
+Ejecuta depreciación para:
+
+Año
+
+Mes
+
+Módulo en desarrollo (activos_depreciacion2)
+
+Maneja un intervalo de períodos
+
+Filtros definidos:
+
+Empresa
+
+Sucursal
+
+Año Desde
+
+Mes Desde
+
+Año Hasta
+
+Mes Hasta
+
+Grupo
+
+Subgrupo
+
+Activo Desde
+
+Activo Hasta
+
+El objetivo es abarcar más activos y más períodos en una sola ejecución, sin romper la lógica existente.
+
+Objetivo del análisis y adaptación
+
+Revisar exhaustivamente el módulo base activos_depreciacion:
+
+Identificar:
+
+Flujo de ejecución
+
+Validaciones previas
+
+Construcción de filtros
+
+Lógica de cálculo
+
+Inserciones en tablas de depreciación
+
+Controles de duplicidad por período
+
+Adaptar esa misma lógica al módulo activos_depreciacion2:
+
+NO reescribir la lógica de negocio.
+
+Reutilizar la lógica existente iterando por períodos.
+
+El rango (Año Desde / Mes Desde → Año Hasta / Mes Hasta) debe:
+
+Generar correctamente cada período intermedio
+
+Ejecutar la depreciación como si fuera una corrida individual del módulo base.
+
+Comportamiento esperado del rango:
+
+Por cada período del rango:
+
+Validar si ya existe depreciación generada.
+
+Omitir períodos ya procesados.
+
+Ejecutar solo los períodos faltantes.
+
+Mantener consistencia con:
+
+Vida útil
+
+Fecha de inicio de depreciación
+
+Valor residual
+
+Depreciación acumulada
+
+Resultado funcional esperado
+
+Al finalizar la ejecución del proceso en activos_depreciacion2, el sistema debe:
+
+Ejecutar correctamente la depreciación para todos los períodos del rango válido
+
+No duplicar información existente
+
+Mostrar un modal informativo al usuario, que contenga como mínimo:
+
+Modal informativo – contenido mínimo
+
+Período inicial procesado
+
+Período final procesado
+
+Cantidad de activos evaluados
+
+Cantidad de registros generados
+
+Cantidad de períodos omitidos (ya existentes)
+
+Mensaje claro de estado:
+
+“Proceso finalizado correctamente”
+
+o advertencias controladas si aplica
+
+Este modal no es un reporte, es un feedback operativo para confirmar lo ejecutado.
+
+Restricciones importantes
+
+No modificar la estructura funcional del módulo base.
+
+No cambiar reglas contables existentes.
+
+El módulo activos_depreciacion2 debe comportarse exactamente igual al módulo base cuando el rango sea de un solo mes.
+
+Toda diferencia debe limitarse únicamente a la iteración del rango de fechas.
+
+Entregable esperado
+
+Código del módulo activos_depreciacion2 ajustado
+
+Misma lógica del módulo base
+
+Iteración correcta por rango de períodos
+
+Modal informativo implementado
+
+Comportamiento validado con rangos amplios (ej. 2007–2025)
