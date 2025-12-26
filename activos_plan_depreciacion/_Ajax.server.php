@@ -245,8 +245,8 @@ function plan_obtener_contexto($aForm)
 
 function plan_filtros_completos($aForm)
 {
-    return !empty($aForm['empresa'])
-        && !empty($aForm['sucursal'])
+    return !empty($aForm['empresa']) && $aForm['empresa'] !== '0'
+        && !empty($aForm['sucursal']) && $aForm['sucursal'] !== '0'
         && !empty($aForm['cod_grupo']) && $aForm['cod_grupo'] !== '0'
         && !empty($aForm['cod_subgrupo']) && $aForm['cod_subgrupo'] !== '0'
         && !empty($aForm['cod_activo_desde']) && $aForm['cod_activo_desde'] !== '0'

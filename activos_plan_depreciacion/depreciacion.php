@@ -256,7 +256,7 @@
                         </div>
                     </div>
                     <div class="col-md-12">
-                        <div class="form-row">                            
+                        <div class="row">                            
                             <div class="col-md-3">
                                 <label for="cod_grupo"> Grupo </label>
                                 <select id="cod_grupo" name="cod_grupo" class="form-control input-sm select2" data-placeholder="Seleccione un grupo" onchange="f_filtro_subgrupo();">
@@ -286,7 +286,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="form-row"> 
+                        <div class="row" style="margin-top: 10px;"> 
                             <div class="col-md-12">
                                 <div class="btn-group" style="width: 100%">
                                     <div id="btnGenerarPlan" class="btn btn-primary btn-sm" data-disabled="false" onclick="generarPlan();" style="width: 50%">
@@ -299,7 +299,7 @@
                                     </div>
                                 </div>
                             </div>
-                            </div>
+                        </div>
                     </div>
                 </div>
                 <input type="hidden" id="meses_prorroga" name="meses_prorroga" value="">
