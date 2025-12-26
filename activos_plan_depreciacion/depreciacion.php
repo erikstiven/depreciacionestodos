@@ -41,12 +41,13 @@
             xajax_genera_cabecera_formulario('nuevo', xajax.getFormValues("form1"));
         }
 
-        function generarPlan(){
-            if (document.getElementById("btnGenerarPlan").getAttribute("data-disabled") === "true") {
+        function consultarPlan(){
+            if (document.getElementById("btnConsultarPlan").getAttribute("data-disabled") === "true") {
                 return;
             }
             if(ProcesarFormulario() == true){
-                xajax_generarPlan(xajax.getFormValues("form1"));
+                listarPlan();
+                validarPlan();
             }
         }
 
@@ -59,11 +60,13 @@
         }
 
         function prorrogarPlan(){
-            var meses = prompt("Ingrese los meses a prorrogar:", "12");
-            if (meses === null) {
+            var check = document.getElementById("aplicar_prorroga");
+            if (!check || !check.checked) {
+                alert("Debe activar la prórroga para continuar.");
                 return;
             }
-            meses = parseInt(meses, 10);
+            var inputMeses = document.getElementById("meses_prorroga");
+            var meses = parseInt(inputMeses.value, 10);
             if (isNaN(meses) || meses <= 0) {
                 alert("Debe ingresar un número de meses válido.");
                 return;
@@ -154,6 +157,57 @@
         }
 		function f_filtro_activos_hasta(data){
             xajax_f_filtro_activos_hasta(xajax.getFormValues("form1"));           
+        }
+
+        function toggleProrroga() {
+            var check = document.getElementById("aplicar_prorroga");
+            var input = document.getElementById("meses_prorroga");
+            var boton = document.getElementById("btnProrrogarPlan");
+            if (!check || !input || !boton) {
+                return;
+            }
+            if (check.checked) {
+                input.disabled = false;
+                boton.style.display = 'inline-block';
+            } else {
+                input.disabled = true;
+                input.value = '';
+                boton.style.display = 'none';
+            }
+        }
+
+        function initPlanDataTable() {
+            if (!window.jQuery || !jQuery.fn.DataTable) {
+                return;
+            }
+            var tabla = $('#tablaPlanDepreciacion');
+            if (!tabla.length) {
+                return;
+            }
+            if ($.fn.DataTable.isDataTable(tabla)) {
+                tabla.DataTable().destroy();
+            }
+            tabla.DataTable({
+                paging: true,
+                searching: true,
+                pageLength: 25,
+                order: [[0, 'asc'], [2, 'asc']],
+                language: {
+                    sProcessing: "Procesando...",
+                    sLengthMenu: "Mostrar _MENU_ registros",
+                    sZeroRecords: "No se encontraron resultados",
+                    sEmptyTable: "Ningún dato disponible en esta tabla",
+                    sInfo: "Mostrando _START_ a _END_ de _TOTAL_ registros",
+                    sInfoFiltered: "(filtrado de un total de _MAX_ registros)",
+                    sSearch: "Buscar:",
+                    oPaginate: {
+                        sFirst: "Primero",
+                        sLast: "Último",
+                        sNext: "Siguiente",
+                        sPrevious: "Anterior"
+                    }
+                }
+            });
         }
    
 		function eliminar_lista_activo_hasta() {
@@ -286,23 +340,34 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="row" style="margin-top: 10px;"> 
-                            <div class="col-md-12">
-                                <div class="btn-group" style="width: 100%">
-                                    <div id="btnGenerarPlan" class="btn btn-primary btn-sm" data-disabled="false" onclick="generarPlan();" style="width: 50%">
-                                        <span class="glyphicon glyphicon-cog"></span>
-                                        Generar Plan
-                                    </div>
-                                    <div id="btnProrrogarPlan" class="btn btn-warning btn-sm" onclick="prorrogarPlan();" style="width: 50%; display: none;">
-                                        <span class="glyphicon glyphicon-time"></span>
-                                        Prorrogar Vida Útil
-                                    </div>
+                        <div class="row" style="margin-top: 10px;">
+                            <div class="col-md-6">
+                                <div id="btnConsultarPlan" class="btn btn-primary btn-sm" data-disabled="false" onclick="consultarPlan();" style="width: 100%">
+                                    <span class="glyphicon glyphicon-search"></span>
+                                    Consultar Plan
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="checkbox" style="margin-top: 0;">
+                                    <label>
+                                        <input type="checkbox" id="aplicar_prorroga" name="aplicar_prorroga" value="1" onclick="toggleProrroga();">
+                                        Aplicar prórroga de vida útil
+                                    </label>
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-group-addon">Meses</span>
+                                    <input type="number" min="1" id="meses_prorroga" name="meses_prorroga" class="form-control input-sm" disabled>
+                                    <span class="input-group-btn">
+                                        <button id="btnProrrogarPlan" type="button" class="btn btn-warning btn-sm" onclick="prorrogarPlan();" style="display: none;">
+                                            <span class="glyphicon glyphicon-time"></span>
+                                            Aplicar Prórroga
+                                        </button>
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <input type="hidden" id="meses_prorroga" name="meses_prorroga" value="">
                 <div class="col-md-12">
                     <div id="divPlanMensajes" style="margin-top: 15px; display: none;"></div>
                     <div id="divPlanTabla" class="table-responsive" style="margin-top: 10px;"></div>
@@ -311,7 +376,7 @@
         </div>
     </body>
          
-    <script>genera_cabecera_formulario(); generaSelect2();</script> 
+    <script>genera_cabecera_formulario(); generaSelect2(); toggleProrroga();</script> 
     <? /*     * ***************************************************************** */ ?>
     <? /* NO MODIFICAR ESTA SECCION */ ?>
 <? } ?>

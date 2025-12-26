@@ -274,156 +274,14 @@ function generarPlan($aForm = '')
     $oIfx->DSN = $DSN_Ifx;
     $oIfx->Conectar();
 
-    $oIfxA = new Dbo();
-    $oIfxA->DSN = $DSN_Ifx;
-    $oIfxA->Conectar();
-
     $oReturn = new xajaxResponse();
 
     if (!plan_filtros_completos($aForm)) {
         return $oReturn;
     }
 
-    $contexto = plan_obtener_contexto($aForm);
-    $empresa = $contexto['empresa'];
-    $sucursal = $contexto['sucursal'];
-    $filtro = $contexto['filtro'];
-    $tiene_estado = plan_tiene_met_estado($oIfx);
-
-    $sql = "SELECT saeact.act_cod_act,
-                   saeact.act_vutil_act,
-                   saeact.act_val_comp,
-                   saeact.act_fcmp_act,
-                   saeact.act_fdep_act,
-                   saeact.act_vres_act,
-                   saeact.act_clave_act,
-                   saeact.act_nom_act,
-                   saeact.act_cod_sucu
-            FROM saeact
-            WHERE (saeact.act_clave_padr is null or saeact.act_clave_padr = '')
-            AND saeact.act_cod_empr = $empresa
-            AND saeact.act_cod_sucu = $sucursal
-            AND saeact.act_ext_act = 1
-            $filtro
-            ORDER BY saeact.act_cod_act";
-
-    $procesados = 0;
-    $omitidos = 0;
-    $alertas = [];
-
-    if ($oIfxA->Query($sql)) {
-        if ($oIfxA->NumFilas() > 0) {
-            do {
-                $codigo_activo = $oIfxA->f('act_cod_act');
-                $vida_util = floatval($oIfxA->f('act_vutil_act'));
-                $valor_compra = floatval($oIfxA->f('act_val_comp'));
-                $valor_residual = floatval($oIfxA->f('act_vres_act'));
-                $fecha_compra = $oIfxA->f('act_fcmp_act');
-                $fecha_depreciacion = $oIfxA->f('act_fdep_act');
-                $clave_activo = $oIfxA->f('act_clave_act');
-                $nombre_activo = $oIfxA->f('act_nom_act');
-
-                $sql_plan = "select count(*) as total
-                            from saemet
-                            where metd_cod_empr = $empresa
-                            and metd_cod_acti = $codigo_activo";
-                $plan_existe = intval(consulta_string($sql_plan, 'total', $oIfx, 0));
-                if ($plan_existe > 0) {
-                    $omitidos++;
-                    $alertas[] = "El activo {$clave_activo} ya tiene un plan generado.";
-                    continue;
-                }
-
-                if ($vida_util <= 0) {
-                    $omitidos++;
-                    $alertas[] = "El activo {$clave_activo} tiene vida útil inválida.";
-                    continue;
-                }
-
-                if ($valor_compra <= $valor_residual) {
-                    $omitidos++;
-                    $alertas[] = "El activo {$clave_activo} tiene valor residual mayor o igual al valor de compra.";
-                    continue;
-                }
-
-                $fecha_inicio_activo = $fecha_depreciacion;
-                if (empty($fecha_inicio_activo)) {
-                    $fecha_inicio_activo = $fecha_compra;
-                }
-                $inicio_dt = DateTime::createFromFormat('Y-m-d', $fecha_inicio_activo);
-                if (!$inicio_dt) {
-                    $omitidos++;
-                    $alertas[] = "El activo {$clave_activo} no tiene fecha de inicio válida.";
-                    continue;
-                }
-                $inicio_dt = plan_inicio_mes($inicio_dt);
-
-                $vida_util_meses = intval(round($vida_util * 12));
-                if ($vida_util_meses <= 0) {
-                    $omitidos++;
-                    $alertas[] = "El activo {$clave_activo} tiene vida útil en meses inválida.";
-                    continue;
-                }
-
-                $valor_neto = round($valor_compra - $valor_residual, 2);
-                $monto_mensual = round($valor_neto / $vida_util_meses, 2);
-                if ($monto_mensual <= 0) {
-                    $omitidos++;
-                    $alertas[] = "La depreciación mensual del activo {$clave_activo} es 0. Revise los valores.";
-                    continue;
-                }
-
-                $porcentaje = round(1 / $vida_util_meses, 6);
-                $acumulado = 0;
-                for ($i = 0; $i < $vida_util_meses; $i++) {
-                    $periodo_dt = (clone $inicio_dt)->modify('+' . $i . ' months');
-                    $fecha_desde = $periodo_dt->format('Y-m-01');
-                    $fecha_hasta = $periodo_dt->format('Y-m-t');
-                    $dias = intval($periodo_dt->format('t'));
-
-                    if ($i === $vida_util_meses - 1) {
-                        $monto = round($valor_neto - $acumulado, 2);
-                    } else {
-                        $monto = $monto_mensual;
-                    }
-                    $acumulado += $monto;
-
-                    if ($tiene_estado) {
-                        $sql_insert = "insert into saemet
-                            (met_anio_met, metd_des_fech, metd_has_fech, metd_cod_empr, metd_cod_acti,
-                             act_cod_empr, act_cod_sucu, met_porc_met, metd_val_metd, met_num_dias,
-                             metd_cod_reva, met_estado)
-                            values
-                            (" . intval($periodo_dt->format('Y')) . ", '$fecha_desde', '$fecha_hasta', $empresa, $codigo_activo,
-                             $empresa, $sucursal, $porcentaje, $monto, $dias, 0, 'P')";
-                    } else {
-                        $sql_insert = "insert into saemet
-                            (met_anio_met, metd_des_fech, metd_has_fech, metd_cod_empr, metd_cod_acti,
-                             act_cod_empr, act_cod_sucu, met_porc_met, metd_val_metd, met_num_dias,
-                             metd_cod_reva)
-                            values
-                            (" . intval($periodo_dt->format('Y')) . ", '$fecha_desde', '$fecha_hasta', $empresa, $codigo_activo,
-                             $empresa, $sucursal, $porcentaje, $monto, $dias, 0)";
-                    }
-                    $oIfx->QueryT($sql_insert);
-                }
-
-                $procesados++;
-            } while ($oIfxA->SiguienteRegistro());
-        }
-    }
-
-    $mensaje = plan_mensaje_ok("Plan generado. Activos procesados: {$procesados}. Omitidos: {$omitidos}.");
-    if (!empty($alertas)) {
-        $mensaje .= '<ul>' . implode('', array_map(function ($alerta) {
-            return '<li>' . htmlspecialchars($alerta, ENT_QUOTES, 'UTF-8') . '</li>';
-        }, $alertas)) . '</ul>';
-    }
-
-    $oReturn->assign('divPlanMensajes', 'innerHTML', $mensaje);
+    $oReturn->assign('divPlanMensajes', 'innerHTML', plan_mensaje_alerta('El plan se genera desde la ficha del activo. Use \"Consultar Plan\" para revisar y validar.'));
     $oReturn->script("document.getElementById('divPlanMensajes').style.display = 'block';");
-    $oReturn->script('listarPlan();');
-    $oReturn->script('validarPlan();');
     return $oReturn;
 }
 
@@ -439,6 +297,8 @@ function listarPlan($aForm = '')
     $oIfx->DSN = $DSN_Ifx;
     $oIfx->Conectar();
 
+    $oReturn = new xajaxResponse();
+
     if (!plan_filtros_completos($aForm)) {
         $oReturn->assign('divPlanTabla', 'innerHTML', '');
         $oReturn->assign('divPlanMensajes', 'innerHTML', '');
@@ -451,8 +311,6 @@ function listarPlan($aForm = '')
     $sucursal = $contexto['sucursal'];
     $filtro = $contexto['filtro'];
     $tiene_estado = plan_tiene_met_estado($oIfx);
-
-    $oReturn = new xajaxResponse();
 
     $campo_estado = $tiene_estado ? "coalesce(saemet.met_estado, 'P')" : "'P'";
     $sql = "select saeact.act_cod_act,
@@ -498,7 +356,7 @@ function listarPlan($aForm = '')
         $tabla = '<tr><td colspan="6" class="text-center">No hay plan de depreciación para los filtros seleccionados.</td></tr>';
     }
 
-    $html = '<table class="table table-bordered table-condensed table-hover">'
+    $html = '<table id="tablaPlanDepreciacion" class="table table-bordered table-condensed table-hover">'
         . '<thead><tr>'
         . '<th>Activo</th>'
         . '<th>Nombre</th>'
@@ -511,6 +369,7 @@ function listarPlan($aForm = '')
         . '</table>';
 
     $oReturn->assign('divPlanTabla', 'innerHTML', $html);
+    $oReturn->script('initPlanDataTable();');
     return $oReturn;
 }
 
