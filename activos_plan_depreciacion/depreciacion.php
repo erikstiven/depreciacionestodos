@@ -51,6 +51,15 @@
             }
         }
 
+        function generarPlanFaltante(){
+            if (document.getElementById("btnGenerarPlanFaltante").getAttribute("data-disabled") === "true") {
+                return;
+            }
+            if(ProcesarFormulario() == true){
+                xajax_generarPlan(xajax.getFormValues("form1"));
+            }
+        }
+
         function listarPlan(){
             xajax_listarPlan(xajax.getFormValues("form1"));
         }
@@ -262,14 +271,9 @@
                                 $sql = "select empr_cod_empr, empr_nom_empr from saeempr $sql_empr ";
                                 $lista_empr = lista_boostrap_func($oIfx, $sql, $idempresa, 'empr_cod_empr',  'empr_nom_empr' );
 
-                                $sqlSucu = "";
-                                if ($idPerfil != 1 && $idPerfil != 2) {
-                                    $sqlSucu = " and sucu_cod_sucu = $idsucursal";
-                                }
-
                                 $sql = "select sucu_cod_sucu, sucu_nom_sucu
                                         from saesucu  where sucu_cod_empr = $idempresa
-                                        $sqlSucu";
+                                        ";
                                 $lista_sucu = lista_boostrap_func($oIfx, $sql, $idsucursal, 'sucu_cod_sucu',  'sucu_nom_sucu' );    
                                 // LISTA GRUPOS
                                 $sql = " SELECT gact_cod_gact, gact_des_gact
@@ -304,6 +308,7 @@
                                 <label for="sucursal">* Sucursal </label>
                                 <select id="sucursal" name="sucursal" class="form-control input-sm select2" data-placeholder="Seleccione una sucursal" onchange="f_filtro_grupo();" required>
                                     <option value="0">Seleccione una opcion..</option>  
+                                    <option value="ALL">TODAS</option>
                                     <?=$lista_sucu;?>                                  
                                 </select>
                             </div>
@@ -342,11 +347,27 @@
                         </div>
                         <div class="row" style="margin-top: 10px;">
                             <div class="col-md-12">
+                                <div id="btnConsultarPlan" class="btn btn-primary btn-sm" data-disabled="false" onclick="consultarPlan();" style="width: 100%">
+                                    <span class="glyphicon glyphicon-search"></span>
+                                    Consultar Plan
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row" style="margin-top: 10px;">
+                            <div class="col-md-12">
+                                <div id="btnGenerarPlanFaltante" class="btn btn-default btn-sm" data-disabled="false" onclick="generarPlanFaltante();" style="width: 100%; display: none;">
+                                    <span class="glyphicon glyphicon-plus"></span>
+                                    Generar Plan
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row" style="margin-top: 10px;">
+                            <div class="col-md-12">
                                 <div class="checkbox" style="margin-top: 0;">
-                                    <label>
-                                        <input type="checkbox" id="aplicar_prorroga" name="aplicar_prorroga" value="1" onclick="toggleProrroga();">
+                                    <label title="Funcionalidad pendiente">
+                                        <input type="checkbox" id="aplicar_prorroga" name="aplicar_prorroga" value="1" onclick="toggleProrroga();" disabled>
                                         Aplicar prórroga de vida útil
-                                        <span class="glyphicon glyphicon-info-sign text-info" title="Extiende la vida útil agregando nuevos meses al plan. Se aplica solo si selecciona un activo específico y el plan ya terminó."></span>
+                                        <span class="glyphicon glyphicon-info-sign text-info" title="Funcionalidad pendiente"></span>
                                     </label>
                                 </div>
                                 <div class="input-group">
@@ -358,14 +379,6 @@
                                             Aplicar Prórroga
                                         </button>
                                     </span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row" style="margin-top: 10px;">
-                            <div class="col-md-12">
-                                <div id="btnConsultarPlan" class="btn btn-primary btn-sm" data-disabled="false" onclick="consultarPlan();" style="width: 100%">
-                                    <span class="glyphicon glyphicon-search"></span>
-                                    Consultar Plan
                                 </div>
                             </div>
                         </div>
