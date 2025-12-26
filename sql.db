@@ -1,0 +1,284 @@
+SELECT * FROM saemet
+DELETE FROM saemet
+
+SELECT * FROM saecdep
+DELETE  FROM saecdep
+
+
+SELECT * FROM saeact
+
+-- VER LOS ACTIVOS DEL GRUPO EDI
+SELECT
+    a.act_cod_act,
+    a.act_clave_act   AS clave,
+    a.act_nom_act     AS nombre,
+    a.gact_cod_gact   AS grupo,
+    a.sgac_cod_sgac   AS subgrupo
+FROM saeact a
+WHERE a.act_cod_empr = 1
+  AND a.act_cod_sucu = 2
+  AND a.gact_cod_gact = 'EDI'
+  AND a.sgac_cod_sgac = 'EDI'
+ORDER BY a.act_clave_act;
+
+
+
+-- VER LOS ACTIVOS RESPECTIVOS AL GRUPO SELECCIONADO
+
+SELECT
+    a.act_cod_act,
+    a.act_clave_act                    AS clave,
+    a.act_nom_act                      AS nombre,
+    a.act_fcmp_act                     AS fecha_compra,
+    a.act_fdep_act                     AS fecha_calculo,
+    a.act_vutil_act                    AS vida_util_anios,
+    (a.act_vutil_act * 12)             AS meses,
+    a.act_val_comp                     AS valor_compra,
+    a.act_vres_act                     AS valor_residual
+FROM saeact a
+WHERE a.act_cod_empr = 1
+  AND a.act_cod_sucu = 2
+  AND a.gact_cod_gact = 'EDI'
+  AND a.sgac_cod_sgac = 'EDI'
+ORDER BY a.act_fcmp_act, a.act_clave_act;
+
+
+-- GENERAR LOS REGISTROS DE SAEMET PARA EL GRUPO seleccionado_snWITH RECURSIVE meses AS (
+WITH activos AS (
+    SELECT
+        a.act_cod_act,
+        a.act_cod_empr,
+        a.act_cod_sucu,
+        a.act_fcmp_act,
+        a.act_fdep_act,
+        a.act_vutil_act,
+        a.act_val_comp,
+        a.act_vres_act,
+        a.tdep_cod_tdep
+    FROM saeact a
+    WHERE a.act_cod_empr = 1
+      AND a.act_cod_sucu = 2
+      AND a.gact_cod_gact = 'EDI'
+      AND a.sgac_cod_sgac = 'EDI'
+),
+tipos AS (
+    SELECT
+        t.tdep_cod_tdep,
+        t.tdep_tip_val,
+        t.tdep_dep_fcom
+    FROM saetdep t
+    WHERE t.tdep_cod_empr = 1
+),
+base AS (
+    SELECT
+        a.*,
+        t.tdep_tip_val,
+        t.tdep_dep_fcom,
+        CASE WHEN t.tdep_tip_val = 'M' THEN 12 ELSE 1 END AS n_meses,
+        CASE 
+            WHEN t.tdep_dep_fcom = 'S' THEN a.act_fcmp_act
+            ELSE a.act_fdep_act
+        END AS fecha_calculo
+    FROM activos a
+    JOIN tipos t
+      ON t.tdep_cod_tdep = a.tdep_cod_tdep
+),
+series AS (
+    SELECT
+        b.*,
+        gs.i AS idx,
+        (b.act_vutil_act * b.n_meses) AS num_registros
+    FROM base b
+    JOIN LATERAL generate_series(0, (b.act_vutil_act * b.n_meses) - 1) AS gs(i)
+      ON TRUE
+),
+fechas AS (
+    SELECT
+        s.*,
+        CASE
+            WHEN s.tdep_dep_fcom = 'S' THEN date_trunc('month', s.fecha_calculo)
+            ELSE (
+                CASE 
+                    WHEN EXTRACT(day FROM s.fecha_calculo) > 15
+                        THEN date_trunc('month', s.fecha_calculo) + interval '1 month'
+                    ELSE date_trunc('month', s.fecha_calculo)
+                END
+            )
+        END AS mes_inicio
+    FROM series s
+),
+periodos AS (
+    SELECT
+        f.*,
+        (f.mes_inicio + (f.idx || ' month')::interval) AS periodo_inicio,
+        (date_trunc('month', f.mes_inicio + (f.idx || ' month')::interval) 
+            + interval '1 month' - interval '1 day') AS periodo_fin
+    FROM fechas f
+),
+valores AS (
+    SELECT
+        p.*,
+        round((p.act_val_comp - p.act_vres_act) / p.num_registros, 2) AS valor_base
+    FROM periodos p
+),
+valores_final AS (
+    SELECT
+        v.*,
+        CASE 
+            WHEN v.idx = 0 AND v.tdep_dep_fcom = 'S' THEN
+                round(
+                    (v.valor_base / EXTRACT(day FROM (date_trunc('month', v.fecha_calculo) + interval '1 month' - interval '1 day')))
+                    * (EXTRACT(day FROM (date_trunc('month', v.fecha_calculo) + interval '1 month' - interval '1 day')) 
+                       - EXTRACT(day FROM v.fecha_calculo) + 1)
+                , 2)
+            WHEN v.idx = (v.num_registros - 1) THEN
+                round((v.act_val_comp - v.act_vres_act) 
+                    - (
+                        SELECT SUM(
+                            CASE 
+                                WHEN v2.idx = 0 AND v2.tdep_dep_fcom = 'S' THEN
+                                    round(
+                                        (v2.valor_base / EXTRACT(day FROM (date_trunc('month', v2.fecha_calculo) + interval '1 month' - interval '1 day')))
+                                        * (EXTRACT(day FROM (date_trunc('month', v2.fecha_calculo) + interval '1 month' - interval '1 day')) 
+                                           - EXTRACT(day FROM v2.fecha_calculo) + 1)
+                                    , 2)
+                                ELSE v2.valor_base
+                            END
+                        )
+                        FROM valores v2
+                        WHERE v2.act_cod_act = v.act_cod_act
+                          AND v2.idx < v.num_registros - 1
+                    )
+                , 2)
+            ELSE v.valor_base
+        END AS valor_final
+    FROM valores v
+)
+
+INSERT INTO saemet (
+    met_anio_met,
+    metd_des_fech,
+    metd_has_fech,
+    metd_cod_empr,
+    metd_cod_acti,
+    act_cod_empr,
+    act_cod_sucu,
+    met_porc_met,
+    metd_val_metd,
+    met_num_dias,
+    metd_cod_reva
+)
+SELECT
+    EXTRACT(year FROM v.periodo_inicio)::int AS met_anio_met,
+    v.periodo_inicio::date AS metd_des_fech,
+    v.periodo_fin::date AS metd_has_fech,
+    v.act_cod_empr AS metd_cod_empr,
+    v.act_cod_act AS metd_cod_acti,
+    v.act_cod_empr AS act_cod_empr,
+    v.act_cod_sucu AS act_cod_sucu,
+    (1.0 / v.num_registros) AS met_porc_met,
+    v.valor_final AS metd_val_metd,
+    0 AS met_num_dias,
+    0 AS metd_cod_reva
+FROM valores_final v;
+
+	
+	--VERIFICAR CREACION 
+	
+	SELECT
+  metd_cod_acti,
+  metd_des_fech,
+  metd_has_fech,
+  met_num_dias,
+  met_porc_met,
+  metd_val_metd
+FROM saemet
+ORDER BY metd_cod_acti;
+
+
+--EJECUTAR LAS DEPRECIACIONES
+
+WITH rango AS (
+    SELECT
+        DATE '2007-02-01' AS fec_ini_global,
+        DATE '2025-01-31' AS fec_fin_global
+),
+meses AS (
+    SELECT
+        EXTRACT(YEAR FROM gs)::int  AS anio,
+        EXTRACT(MONTH FROM gs)::int AS mes,
+        (date_trunc('month', gs) + interval '1 month - 1 day')::date AS fec_depr
+    FROM rango r,
+         generate_series(r.fec_ini_global, r.fec_fin_global, interval '1 month') gs
+),
+base AS (
+    SELECT
+        m.metd_cod_acti,
+        m.metd_cod_empr,
+        a.act_cod_empr,
+        a.act_cod_sucu,
+        m.metd_des_fech,
+        m.metd_has_fech,
+        ROUND(m.metd_val_metd / 12.0, 2) AS val_mensual
+    FROM saemet m
+    JOIN saeact a ON a.act_cod_act = m.metd_cod_acti
+    WHERE a.gact_cod_gact = 'EDI'
+      AND a.sgac_cod_sgac = 'EDI'
+)
+INSERT INTO saecdep (
+    cdep_cod_acti,
+    cdep_cod_tdep,
+    cdep_mes_depr,
+    cdep_ani_depr,
+    cdep_fec_depr,
+    act_cod_empr,
+    act_cod_sucu,
+    cdep_dep_acum,
+    cdep_gas_depn,
+    cdep_tot_depr,
+    cdep_cod_empr,
+    cdep_est_cdep,
+    cdep_fec_cdep
+)
+SELECT
+    b.metd_cod_acti,
+    'D' AS cdep_cod_tdep,
+    m.mes,
+    m.anio,
+    m.fec_depr,
+    b.act_cod_empr,
+    b.act_cod_sucu,
+
+    -- acumulado
+    ROUND(
+        SUM(b.val_mensual)
+        OVER (
+            PARTITION BY b.metd_cod_acti
+            ORDER BY m.anio, m.mes
+        ),
+        2
+    ) AS cdep_dep_acum,
+
+    -- gasto mensual
+    b.val_mensual AS cdep_gas_depn,
+
+    -- total del mes
+    b.val_mensual AS cdep_tot_depr,
+
+    b.metd_cod_empr,
+    'A' AS cdep_est_cdep,
+    NOW() AS cdep_fec_cdep
+FROM base b
+JOIN meses m
+  ON m.fec_depr BETWEEN b.metd_des_fech AND b.metd_has_fech
+WHERE m.fec_depr BETWEEN DATE '2007-02-01' AND DATE '2025-01-31'
+
+-- evita duplicar meses ya generados
+AND NOT EXISTS (
+    SELECT 1
+    FROM saecdep d
+    WHERE d.cdep_cod_acti = b.metd_cod_acti
+      AND d.cdep_ani_depr = m.anio
+      AND d.cdep_mes_depr = m.mes
+);
+
