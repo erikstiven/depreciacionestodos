@@ -21,15 +21,11 @@ $xajax->configure('decodeUTF8Input',true);
 $xajax->registerFunction("genera_cabecera_formulario");
 $xajax->registerFunction("generar");
 $xajax->registerFunction("f_filtro_mes");
-$xajax->registerFunction("f_filtro_mes_desde");
-$xajax->registerFunction("f_filtro_mes_hasta");
 $xajax->registerFunction("f_filtro_grupo");
 $xajax->registerFunction("f_filtro_subgrupo");
 $xajax->registerFunction("f_filtro_activos_desde");
 $xajax->registerFunction("f_filtro_activos_hasta");
 $xajax->registerFunction("f_filtro_sucursal");
 $xajax->registerFunction("f_filtro_anio");
-$xajax->registerFunction("f_filtro_anio_desde");
-$xajax->registerFunction("f_filtro_anio_hasta");
 
 ?>

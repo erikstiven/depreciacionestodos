@@ -9,8 +9,6 @@
 	<link rel="stylesheet" type="text/css" href="<?=$_COOKIE["JIREH_INCLUDE"]?>css/bootstrap-3.3.7-dist/css/bootstrap.css" media="screen">
 	<link rel="stylesheet" type="text/css" href="<?=$_COOKIE["JIREH_INCLUDE"]?>css/bootstrap-3.3.7-dist/css/bootstrap.min.css" media="screen">
 	<link rel="stylesheet" type="text/css" href="<?=$_COOKIE["JIREH_INCLUDE"]?>js/treeview/css/bootstrap-treeview.css" media="screen"> 
-	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-	<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
 	
     <!--Javascript--> 
     
@@ -20,12 +18,6 @@
     <script src="<?=$_COOKIE["JIREH_INCLUDE"]?>js/dataTables/bootstrap.js"></script>
 	<script type="text/javascript" language="JavaScript" src="<?=$_COOKIE["JIREH_INCLUDE"]?>js/treeview/js/bootstrap-treeview.js"></script>
     <script type="text/javascript" language="javascript" src="<?=$_COOKIE["JIREH_INCLUDE"]?>css/bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
-	<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-	<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-	<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 	
     <script>
 
@@ -42,51 +34,6 @@
                 xajax_generar(xajax.getFormValues("form1"));
             }
         }
-
-		function initDataTableReporte() {
-			if (typeof $ === 'undefined' || !$.fn || !$.fn.DataTable) {
-				return;
-			}
-			var $tabla = $('#tablaReporteDepreciacion');
-			if ($tabla.length === 0) {
-				return;
-			}
-			if ($.fn.dataTable.isDataTable('#tablaReporteDepreciacion')) {
-				$tabla.DataTable().destroy();
-			}
-			$tabla.DataTable({
-				paging: true,
-				searching: true,
-				ordering: true,
-				info: true,
-				responsive: true,
-				pageLength: 25,
-				dom: 'Bfrtip',
-				buttons: [
-					{
-						extend: 'excelHtml5',
-						title: 'Reporte Depreciación de Activos'
-					},
-					{
-						extend: 'pdfHtml5',
-						orientation: 'landscape',
-						pageSize: 'A4',
-						title: 'Reporte Depreciación de Activos'
-					},
-					{
-						extend: 'print',
-						title: 'Reporte Depreciación de Activos'
-					},
-					{
-						extend: 'copy',
-						title: 'Reporte Depreciación de Activos'
-					}
-				],
-				language: {
-					url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
-				}
-			});
-		}
 		
 		        function f_filtro_sucursal(data){
             xajax_f_filtro_sucursal(xajax.getFormValues("form1"), data);           
