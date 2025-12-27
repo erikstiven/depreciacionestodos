@@ -435,6 +435,18 @@ function listar_pendientes($aForm = '')
 
     $oReturn = new xajaxResponse();
 
+    $arrayTipoDepre = [];
+    $sql_tipo = "select tdep_cod_tdep, tdep_tip_val 
+                        from saetdep";
+    if ($oIfx->Query($sql_tipo)) {
+        if ($oIfx->NumFilas() > 0) {
+            do {
+                $arrayTipoDepre[$oIfx->f('tdep_cod_tdep')] = $oIfx->f('tdep_tip_val');
+            } while ($oIfx->SiguienteRegistro());
+        }
+    }
+    $oIfx->Free();
+
     $idempresa = $_SESSION['U_EMPRESA'];
     $idsucursal = $_SESSION['U_SUCURSAL'];
 
@@ -519,6 +531,8 @@ function listar_pendientes($aForm = '')
             $fecha_compra = $oIfxA->f('act_fcmp_act');
             $fecha_depreciacion = $oIfxA->f('act_fdep_act');
             $fecha_fin_activo = $oIfxA->f('act_fiman_act');
+            $vida_util = $oIfxA->f('act_vutil_act');
+            $tipo_depreciacion = $oIfxA->f('tdep_cod_tdep');
 
             $fecha_inicio_activo = $fecha_depreciacion;
             if (empty($fecha_inicio_activo)) {
@@ -536,6 +550,20 @@ function listar_pendientes($aForm = '')
                 $fin_activo_dt = DateTime::createFromFormat('Y-m-d', $fecha_fin_activo);
             }
 
+            $intervalo = $arrayTipoDepre[$tipo_depreciacion] ?? 'M';
+            if (empty($intervalo)) {
+                $intervalo = 'M';
+            }
+            $vida_util_meses = intval($vida_util);
+            if ($intervalo === 'M') {
+                $vida_util_meses = intval($vida_util) * 12;
+            }
+            $fin_vida_util_dt = clone $inicio_activo_dt;
+            $fin_vida_util_dt->modify('+' . max($vida_util_meses - 1, 0) . ' months')->modify('last day of this month');
+            if ($fin_activo_dt && $fin_activo_dt < $fin_vida_util_dt) {
+                $fin_vida_util_dt = $fin_activo_dt;
+            }
+
             $periodo_actual = clone $fecha_inicio_rango;
             while ($periodo_actual <= $fecha_fin_rango) {
                 $anio_iter = intval($periodo_actual->format('Y'));
@@ -543,8 +571,9 @@ function listar_pendientes($aForm = '')
                 $mes_inicio = new DateTime($periodo_actual->format('Y-m-01'));
                 $inicio_activo_mes = new DateTime($inicio_activo_dt->format('Y-m-01'));
                 $fin_activo_mes = $fin_activo_dt ? new DateTime($fin_activo_dt->format('Y-m-01')) : null;
+                $fin_vida_mes = new DateTime($fin_vida_util_dt->format('Y-m-01'));
 
-                if ($mes_inicio >= $inicio_activo_mes && (!$fin_activo_mes || $mes_inicio <= $fin_activo_mes)) {
+                if ($mes_inicio >= $inicio_activo_mes && $mes_inicio <= $fin_vida_mes && (!$fin_activo_mes || $mes_inicio <= $fin_activo_mes)) {
                     $sql_existe = "select count(cdep_gas_depn) as existe
                                     from saecdep
                                     where cdep_cod_acti = $codigo_activo
