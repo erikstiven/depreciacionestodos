@@ -31,5 +31,6 @@ $xajax->registerFunction("f_filtro_sucursal");
 $xajax->registerFunction("f_filtro_anio");
 $xajax->registerFunction("f_filtro_anio_desde");
 $xajax->registerFunction("f_filtro_anio_hasta");
+$xajax->registerFunction("listar_pendientes");
 
 ?>
