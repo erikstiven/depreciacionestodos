@@ -397,7 +397,7 @@ function f_filtro_subgrupo($aForm = '')
     }
 
 
-    // DATOS DEL ACTIVO s
+    // DATOS DEL ACTIVO
     $sql = "select sgac_cod_sgac, sgac_des_sgac 
 			 from saesgac where sgac_cod_empr = $empresa                                                                  
 			 and gact_cod_gact = '$codigoGrupo'
@@ -546,12 +546,15 @@ function generar($aForm = '')
         if ($oIfxA->Query($sql)) {
             if ($oIfxA->NumFilas() > 0) {
                 $audit_log = [];
+                $total_activos = 0;
                 $total_evaluados = 0;
                 $total_procesados = 0;
                 $total_omitidos = 0;
+                $total_omitidos_existentes = 0;
                 $alertas_pendientes = [];
                 do {
                     // LEER DATOS AVTIVO
+                    $total_activos++;
                     $codigo_activo        =    $oIfxA->f('act_cod_act');
                     $vida_util          =    $oIfxA->f('act_vutil_act');
                     $valor_compra        =    $oIfxA->f('act_val_comp');
@@ -732,6 +735,9 @@ function generar($aForm = '')
                             $total_procesados++;
                         } else {
                             $total_omitidos++;
+                            if ($motivo === 'YA EXISTE') {
+                                $total_omitidos_existentes++;
+                            }
                         }
 
                         $periodo_actual->modify('+1 month');
@@ -760,11 +766,20 @@ function generar($aForm = '')
                         . '</li></ul></div>';
                 }
 
+                $periodo_inicio_texto = str_pad($mes_desde, 2, '0', STR_PAD_LEFT) . '/' . $anio_desde;
+                $periodo_fin_texto = str_pad($mes_hasta, 2, '0', STR_PAD_LEFT) . '/' . $anio_hasta;
+                $estado_proceso = empty($alertas_pendientes)
+                    ? 'Proceso finalizado correctamente'
+                    : 'Proceso finalizado con advertencias';
+
                 $resumen_html = '<div class="row">'
                     . '<div class="col-md-12">'
-                    . '<p><strong>Meses evaluados:</strong> ' . $total_evaluados . '</p>'
-                    . '<p><strong>Procesados:</strong> ' . $total_procesados . '</p>'
-                    . '<p><strong>Omitidos:</strong> ' . $total_omitidos . '</p>'
+                    . '<p><strong>Período inicial procesado:</strong> ' . $periodo_inicio_texto . '</p>'
+                    . '<p><strong>Período final procesado:</strong> ' . $periodo_fin_texto . '</p>'
+                    . '<p><strong>Activos evaluados:</strong> ' . $total_activos . '</p>'
+                    . '<p><strong>Registros generados:</strong> ' . $total_procesados . '</p>'
+                    . '<p><strong>Períodos omitidos (ya existentes):</strong> ' . $total_omitidos_existentes . '</p>'
+                    . '<p><strong>Estado:</strong> ' . $estado_proceso . '</p>'
                     . '</div>'
                     . '</div>'
                     . $alerta_html
@@ -786,11 +801,16 @@ function generar($aForm = '')
                 $oReturn->assign('divResumenDepreciacion', 'innerHTML', $resumen_html);
                 $oReturn->script('mostrarResumenDepreciacion();');
             } else {
+                $periodo_inicio_texto = str_pad($mes_desde, 2, '0', STR_PAD_LEFT) . '/' . $anio_desde;
+                $periodo_fin_texto = str_pad($mes_hasta, 2, '0', STR_PAD_LEFT) . '/' . $anio_hasta;
                 $resumen_html = '<div class="row">'
                     . '<div class="col-md-12">'
-                    . '<p><strong>Meses evaluados:</strong> 0</p>'
-                    . '<p><strong>Procesados:</strong> 0</p>'
-                    . '<p><strong>Omitidos:</strong> 0</p>'
+                    . '<p><strong>Período inicial procesado:</strong> ' . $periodo_inicio_texto . '</p>'
+                    . '<p><strong>Período final procesado:</strong> ' . $periodo_fin_texto . '</p>'
+                    . '<p><strong>Activos evaluados:</strong> 0</p>'
+                    . '<p><strong>Registros generados:</strong> 0</p>'
+                    . '<p><strong>Períodos omitidos (ya existentes):</strong> 0</p>'
+                    . '<p><strong>Estado:</strong> Proceso finalizado correctamente</p>'
                     . '</div>'
                     . '</div>'
                     . '<div class="table-responsive" style="max-height: 300px; overflow: auto;">'
