@@ -688,6 +688,16 @@ function generar($aForm = '')
 										and cdep_ani_depr = $anio_prev
 										and cdep_mes_depr = $mes_prev";
                                 $valor_acumulado = consulta_string($sql_dep_acumulada, 'depr_acumulada', $oIfx, 0);
+                                if ($valor_acumulado == 0) {
+                                    $periodo_actual_num = ($anio_iter * 100) + $mes_iter;
+                                    $sql_dep_ultimo = "SELECT (coalesce(cdep_dep_acum, 0) +  coalesce(cdep_gas_depn, 0)) as depr_acumulada
+										from saecdep
+										where cdep_cod_acti = $codigo_activo
+										and (cdep_ani_depr * 100 + cdep_mes_depr) < $periodo_actual_num
+										order by cdep_ani_depr desc, cdep_mes_depr desc
+										limit 1";
+                                    $valor_acumulado = consulta_string($sql_dep_ultimo, 'depr_acumulada', $oIfx, 0);
+                                }
 
                                 if ($valor_acumulado == 0) {
                                     $valor_anterior = 0;
