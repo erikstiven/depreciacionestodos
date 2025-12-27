@@ -800,12 +800,12 @@ function generar($aForm = '')
 					if (empty($fecha_inicio_activo)) {
 						$fecha_inicio_activo = $fecha_compra;
 					}
-					$inicio_activo_dt = DateTime::createFromFormat('Y-m-d', $fecha_inicio_activo);
-					if (!$inicio_activo_dt) {
-						$inicio_activo_dt = clone $periodo_fin_dt;
-					} else {
-						$inicio_activo_dt = obtener_inicio_mes_depreciacion($inicio_activo_dt);
-					}
+						$inicio_activo_dt = DateTime::createFromFormat('Y-m-d', $fecha_inicio_activo);
+						if (!$inicio_activo_dt) {
+							$inicio_activo_dt = clone $periodo_fin_dt;
+						} else {
+							$inicio_activo_dt->modify('first day of this month');
+						}
 
 					$vida_util_meses = $vida_util * 12;
 					$fin_vida_util_dt = clone $inicio_activo_dt;
@@ -896,73 +896,65 @@ function generar($aForm = '')
 			$fecha_corte_dt->modify('last day of this month');
 			$fecha_corte = $fecha_corte_dt->format('Y-m-d');
 
-			$sql = " WITH params AS (
-						SELECT DATE '$fecha_corte' AS fecha_corte
-					),
-					base AS (
-						SELECT
-							saeact.act_cod_act,
-							saeact.act_clave_act,
-							saeact.act_nom_act,
-							saeact.act_fdep_act,
-							saeact.act_vutil_act,
-							saeact.act_val_comp,
-							saeact.act_vres_act,
-								CASE
-									WHEN EXTRACT(DAY FROM COALESCE(saeact.act_fdep_act, saeact.act_fcmp_act)) = 1
-										THEN date_trunc('month', COALESCE(saeact.act_fdep_act, saeact.act_fcmp_act))
-									ELSE date_trunc('month', COALESCE(saeact.act_fdep_act, saeact.act_fcmp_act)) + interval '1 month'
-								END AS inicio_mes,
-							saegact.gact_des_gact,
-							saesgac.sgac_des_sgac
-						FROM saeact
-						JOIN saesgac
-						  ON saesgac.sgac_cod_sgac = saeact.sgac_cod_sgac
-						 AND saesgac.sgac_cod_empr = saeact.act_cod_empr
-						JOIN saegact
-						  ON saegact.gact_cod_gact = saesgac.gact_cod_gact
-						 AND saegact.gact_cod_empr = saesgac.sgac_cod_empr
-						WHERE saeact.act_cod_empr = $empresa
-						  AND ( ( (COALESCE(DATE_PART('year', act_fiman_act ),3000))*100+COALESCE(DATE_PART('month',act_fiman_act),13)   )  > ($anio_fin *100 + $mes_fin)  )
-						  AND ( DATE_PART('year', act_fcmp_act) < $anio_fin OR ( DATE_PART('year', act_fcmp_act) = $anio_fin AND DATE_PART('month',act_fcmp_act) <= $mes_fin))
-						  $filtro
-					),
-					calculo AS (
-						SELECT
-							base.*,
-							(base.act_val_comp - base.act_vres_act) AS valor_neto,
-							(base.act_vutil_act * 12) AS vida_util_meses,
-							(base.act_val_comp - base.act_vres_act)
-								/ (base.act_vutil_act * 12) AS depreciacion_mensual,
-							(
-								(EXTRACT(YEAR FROM p.fecha_corte) - EXTRACT(YEAR FROM base.inicio_mes)) * 12
-								+ (EXTRACT(MONTH FROM p.fecha_corte) - EXTRACT(MONTH FROM base.inicio_mes))
-								+ 1
-							) AS meses_base
-						FROM base
-						CROSS JOIN params p
-					)
-					SELECT
-						act_clave_act,
-						act_nom_act,
-						act_fdep_act,
-						act_vutil_act,
-						ROUND(act_val_comp, 2) AS valor_compra,
-						ROUND(act_vres_act, 2) AS valor_residual,
-						ROUND(valor_neto, 2) AS valor_neto,
-						ROUND(depreciacion_mensual, 2) AS gasto_depreciacion,
-						ROUND(depreciacion_mensual * LEAST(GREATEST(meses_base, 0), vida_util_meses), 2) AS dep_acumulada,
+			$periodo_corte = ($anio_fin * 100) + $mes_fin;
+			$sql = " SELECT
+						saeact.act_clave_act,
+						saeact.act_nom_act,
+						saeact.act_fdep_act,
+						saeact.act_vutil_act,
+						ROUND(saeact.act_val_comp, 2) AS valor_compra,
+						ROUND(saeact.act_vres_act, 2) AS valor_residual,
+						ROUND((saeact.act_val_comp - saeact.act_vres_act), 2) AS valor_neto,
+						ROUND(COALESCE(SUM(CASE
+							WHEN (saecdep.cdep_ani_depr * 100 + saecdep.cdep_mes_depr) = $periodo_corte
+							THEN saecdep.cdep_gas_depn
+							ELSE 0
+						END), 0), 2) AS gasto_depreciacion,
+						ROUND(COALESCE(SUM(CASE
+							WHEN (saecdep.cdep_ani_depr * 100 + saecdep.cdep_mes_depr) <= $periodo_corte
+							THEN saecdep.cdep_gas_depn
+							ELSE 0
+						END), 0), 2) AS dep_acumulada,
 						ROUND(
-							CASE
-								WHEN LEAST(GREATEST(meses_base, 0), vida_util_meses) = 0 THEN 0
-								ELSE (depreciacion_mensual * LEAST(GREATEST(meses_base, 0), vida_util_meses)) - depreciacion_mensual
-							END,
+							COALESCE(SUM(CASE
+								WHEN (saecdep.cdep_ani_depr * 100 + saecdep.cdep_mes_depr) <= $periodo_corte
+								THEN saecdep.cdep_gas_depn
+								ELSE 0
+							END), 0)
+							- COALESCE(SUM(CASE
+								WHEN (saecdep.cdep_ani_depr * 100 + saecdep.cdep_mes_depr) = $periodo_corte
+								THEN saecdep.cdep_gas_depn
+								ELSE 0
+							END), 0),
 							2
 						) AS dep_anterior,
-						ROUND(act_val_comp - (depreciacion_mensual * LEAST(GREATEST(meses_base, 0), vida_util_meses)), 2) AS valor_por_depreciar,
-						gact_des_gact,
-						sgac_des_sgac
-					FROM calculo
+						ROUND(
+							saeact.act_val_comp - COALESCE(SUM(CASE
+								WHEN (saecdep.cdep_ani_depr * 100 + saecdep.cdep_mes_depr) <= $periodo_corte
+								THEN saecdep.cdep_gas_depn
+								ELSE 0
+							END), 0),
+							2
+						) AS valor_por_depreciar,
+						saegact.gact_des_gact,
+						saesgac.sgac_des_sgac
+					FROM saeact
+					JOIN saesgac
+					  ON saesgac.sgac_cod_sgac = saeact.sgac_cod_sgac
+					 AND saesgac.sgac_cod_empr = saeact.act_cod_empr
+					JOIN saegact
+					  ON saegact.gact_cod_gact = saesgac.gact_cod_gact
+					 AND saegact.gact_cod_empr = saesgac.sgac_cod_empr
+					LEFT JOIN saecdep
+					  ON saecdep.cdep_cod_acti = saeact.act_cod_act
+					 AND saecdep.act_cod_empr = saeact.act_cod_empr
+					 AND saecdep.act_cod_sucu = saeact.act_cod_sucu
+					WHERE saeact.act_cod_empr = $empresa
+					  AND ( ( (COALESCE(DATE_PART('year', act_fiman_act ),3000))*100+COALESCE(DATE_PART('month',act_fiman_act),13)   )  > ($anio_fin *100 + $mes_fin)  )
+					  AND ( DATE_PART('year', act_fcmp_act) < $anio_fin OR ( DATE_PART('year', act_fcmp_act) = $anio_fin AND DATE_PART('month',act_fcmp_act) <= $mes_fin))
+					  $filtro
+					GROUP BY saeact.act_cod_act, saeact.act_clave_act, saeact.act_nom_act, saeact.act_fdep_act,
+						saeact.act_vutil_act, saeact.act_val_comp, saeact.act_vres_act, saegact.gact_des_gact, saesgac.sgac_des_sgac
 					ORDER BY gact_des_gact, sgac_des_sgac, act_nom_act ";
 
 			if ($oIfx->Query($sql)) {
