@@ -53,6 +53,15 @@
                 xajax_generar(xajax.getFormValues("form1"));
             }
         }
+
+        function listarPendientes(){
+            if (document.getElementById("btnProcesar").getAttribute("data-disabled") === "true") {
+                return;
+            }
+            if (ProcesarFormulario() == true){
+                xajax_listar_pendientes(xajax.getFormValues("form1"));
+            }
+        }
 		
         function f_filtro_sucursal(data){
             xajax_f_filtro_sucursal(xajax.getFormValues("form1"), data);           
@@ -202,6 +211,33 @@
                 modal.setAttribute("aria-hidden", "true");
             }
             var backdrop = document.getElementById("modalResumenDepreBackdrop");
+            if (backdrop && backdrop.parentNode) {
+                backdrop.parentNode.removeChild(backdrop);
+            }
+        }
+
+        function mostrarPendientesDepreciacion() {
+            var modal = document.getElementById("modalPendientesDepre");
+            if (!modal) {
+                return;
+            }
+            modal.style.display = "block";
+            modal.classList.add("in");
+            modal.setAttribute("aria-hidden", "false");
+            var backdrop = document.createElement("div");
+            backdrop.className = "modal-backdrop fade in";
+            backdrop.id = "modalPendientesDepreBackdrop";
+            document.body.appendChild(backdrop);
+        }
+
+        function cerrarPendientesDepreciacion() {
+            var modal = document.getElementById("modalPendientesDepre");
+            if (modal) {
+                modal.style.display = "none";
+                modal.classList.remove("in");
+                modal.setAttribute("aria-hidden", "true");
+            }
+            var backdrop = document.getElementById("modalPendientesDepreBackdrop");
             if (backdrop && backdrop.parentNode) {
                 backdrop.parentNode.removeChild(backdrop);
             }
@@ -460,6 +496,10 @@
                                         <span class="glyphicon glyphicon-cog"></span>
                                         Procesar
                                     </div>
+                                    <div class="btn btn-info btn-sm" onclick="listarPendientes();" style="width: 100%; margin-top: 8px;">
+                                        <span class="glyphicon glyphicon-list-alt"></span>
+                                        Ver meses pendientes
+                                    </div>
                                 </div>
                             </div>
                     </div>
@@ -480,6 +520,24 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-default" onclick="cerrarResumenDepreciacion();">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="modalPendientesDepre" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content" style="max-height: 90vh;">
+                    <div class="modal-header">
+                        <button type="button" class="close" onclick="cerrarPendientesDepreciacion();" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <h4 class="modal-title">Meses pendientes de depreciación</h4>
+                    </div>
+                    <div class="modal-body" style="max-height: calc(90vh - 140px); overflow-y: auto;">
+                        <div id="divPendientesDepreciacion"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" onclick="cerrarPendientesDepreciacion();">Cerrar</button>
                     </div>
                 </div>
             </div>

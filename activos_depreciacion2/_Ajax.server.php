@@ -417,6 +417,190 @@ function f_filtro_subgrupo($aForm = '')
     return $oReturn;
 }
 
+function listar_pendientes($aForm = '')
+{
+    global $DSN, $DSN_Ifx;
+
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+    }
+
+    $oIfx = new Dbo();
+    $oIfx->DSN = $DSN_Ifx;
+    $oIfx->Conectar();
+
+    $oIfxA = new Dbo();
+    $oIfxA->DSN = $DSN_Ifx;
+    $oIfxA->Conectar();
+
+    $oReturn = new xajaxResponse();
+
+    $idempresa = $_SESSION['U_EMPRESA'];
+    $idsucursal = $_SESSION['U_SUCURSAL'];
+
+    $empresa = $aForm['empresa'];
+    $sucursal = $aForm['sucursal'];
+    if (empty($empresa)) {
+        $empresa = $idempresa;
+    }
+    if (empty($sucursal)) {
+        $sucursal = $idsucursal;
+    }
+
+    $grupo = $aForm['cod_grupo'];
+    $subgrupo = $aForm['cod_subgrupo'];
+    $activo_desde = $aForm['cod_activo_desde'];
+    $activo_hasta = $aForm['cod_activo_hasta'];
+    $anio_desde = $aForm['anio_desde'];
+    $mes_desde = $aForm['mes_desde'];
+    $anio_hasta = $aForm['anio_hasta'];
+    $mes_hasta = $aForm['mes_hasta'];
+
+    if (empty($anio_desde) || empty($mes_desde) || empty($anio_hasta) || empty($mes_hasta)) {
+        $oReturn->alert('Debe seleccionar Año/Mes Desde y Año/Mes Hasta.');
+        return $oReturn;
+    }
+
+    $periodo_inicio = intval($anio_desde) * 100 + intval($mes_desde);
+    $periodo_fin = intval($anio_hasta) * 100 + intval($mes_hasta);
+    if ($periodo_inicio > $periodo_fin) {
+        $oReturn->alert('El rango de fechas es inválido: Año/Mes Desde debe ser menor o igual a Año/Mes Hasta.');
+        return $oReturn;
+    }
+
+    $fecha_inicio_rango = DateTime::createFromFormat('Y-n-j', $anio_desde . '-' . intval($mes_desde) . '-1');
+    $fecha_fin_rango = DateTime::createFromFormat('Y-n-j', $anio_hasta . '-' . intval($mes_hasta) . '-1');
+    if (!$fecha_inicio_rango || !$fecha_fin_rango) {
+        $oReturn->alert('El rango de fechas es inválido. Verifique Año/Mes Desde y Hasta.');
+        return $oReturn;
+    }
+    $fecha_fin_rango->modify('last day of this month');
+
+    $filtro = '';
+    if (!empty($grupo)) {
+        $filtro = " and saeact.gact_cod_gact = '" . $grupo . "'";
+    }
+    if (!empty($subgrupo)) {
+        $filtro .= " and saeact.sgac_cod_sgac = '" . $subgrupo . "'";
+    }
+    if (!empty($activo_desde) && !empty($activo_hasta)) {
+        $filtro .= " and act_cod_act between " . $activo_desde . " and " . $activo_hasta;
+    }
+
+    $sql = "  SELECT saeact.act_cod_act,   
+                     saeact.act_vutil_act,   
+                     saeact.act_val_comp,   
+                     saeact.act_fcmp_act,   
+                     saeact.tdep_cod_tdep,   
+                     saeact.act_fdep_act,   
+                     saeact.act_fiman_act,   
+                     saeact.act_clave_act,
+                     saeact.act_nom_act,
+                     saeact.act_vres_act  
+              FROM saeact,   
+                   saesgac  
+             WHERE ( saesgac.sgac_cod_sgac = saeact.sgac_cod_sgac ) and  
+                   ( saesgac.sgac_cod_empr = saeact.act_cod_empr ) and  
+                   ( saeact.act_clave_padr is null or saeact.act_clave_padr = '') and
+                   ( saeact.act_cod_empr = $empresa ) AND  
+                   saeact.act_ext_act = 1
+                   $filtro";
+
+    $pendientes = [];
+    $total_activos = 0;
+    $total_pendientes = 0;
+
+    if ($oIfxA->Query($sql) && $oIfxA->NumFilas() > 0) {
+        do {
+            $total_activos++;
+            $codigo_activo = $oIfxA->f('act_cod_act');
+            $clave_activo = $oIfxA->f('act_clave_act');
+            $nombre_activo = $oIfxA->f('act_nom_act');
+            $fecha_compra = $oIfxA->f('act_fcmp_act');
+            $fecha_depreciacion = $oIfxA->f('act_fdep_act');
+            $fecha_fin_activo = $oIfxA->f('act_fiman_act');
+
+            $fecha_inicio_activo = $fecha_depreciacion;
+            if (empty($fecha_inicio_activo)) {
+                $fecha_inicio_activo = $fecha_compra;
+            }
+            $inicio_activo_dt = DateTime::createFromFormat('Y-m-d', $fecha_inicio_activo);
+            if (!$inicio_activo_dt) {
+                $inicio_activo_dt = clone $fecha_inicio_rango;
+            } else {
+                $inicio_activo_dt = obtener_inicio_mes_depreciacion($inicio_activo_dt);
+            }
+
+            $fin_activo_dt = null;
+            if (!empty($fecha_fin_activo)) {
+                $fin_activo_dt = DateTime::createFromFormat('Y-m-d', $fecha_fin_activo);
+            }
+
+            $periodo_actual = clone $fecha_inicio_rango;
+            while ($periodo_actual <= $fecha_fin_rango) {
+                $anio_iter = intval($periodo_actual->format('Y'));
+                $mes_iter = intval($periodo_actual->format('m'));
+                $mes_inicio = new DateTime($periodo_actual->format('Y-m-01'));
+                $inicio_activo_mes = new DateTime($inicio_activo_dt->format('Y-m-01'));
+                $fin_activo_mes = $fin_activo_dt ? new DateTime($fin_activo_dt->format('Y-m-01')) : null;
+
+                if ($mes_inicio >= $inicio_activo_mes && (!$fin_activo_mes || $mes_inicio <= $fin_activo_mes)) {
+                    $sql_existe = "select count(cdep_gas_depn) as existe
+                                    from saecdep
+                                    where cdep_cod_acti = $codigo_activo
+                                    and cdep_ani_depr = $anio_iter
+                                    and cdep_mes_depr = $mes_iter";
+                    $existe = consulta_string($sql_existe, 'existe', $oIfx, 0);
+                    if ($existe <= 0) {
+                        $pendientes[] = [
+                            'activo' => $clave_activo,
+                            'nombre' => $nombre_activo,
+                            'anio' => $anio_iter,
+                            'mes' => $mes_iter,
+                        ];
+                        $total_pendientes++;
+                    }
+                }
+
+                $periodo_actual->modify('+1 month');
+            }
+        } while ($oIfxA->SiguienteRegistro());
+    }
+
+    $tabla_detalle = '';
+    foreach ($pendientes as $fila) {
+        $tabla_detalle .= '<tr>'
+            . '<td>' . htmlspecialchars($fila['activo'], ENT_QUOTES, 'UTF-8') . '</td>'
+            . '<td>' . htmlspecialchars($fila['nombre'], ENT_QUOTES, 'UTF-8') . '</td>'
+            . '<td>' . $fila['anio'] . '</td>'
+            . '<td>' . str_pad($fila['mes'], 2, '0', STR_PAD_LEFT) . '</td>'
+            . '</tr>';
+    }
+
+    $resumen_html = '<div class="row">'
+        . '<div class="col-md-12">'
+        . '<p><strong>Activos evaluados:</strong> ' . $total_activos . '</p>'
+        . '<p><strong>Meses pendientes:</strong> ' . $total_pendientes . '</p>'
+        . '</div>'
+        . '</div>'
+        . '<div class="table-responsive" style="max-height: 300px; overflow: auto;">'
+        . '<table class="table table-bordered table-condensed table-hover">'
+        . '<thead><tr>'
+        . '<th>Activo</th>'
+        . '<th>Nombre</th>'
+        . '<th>Año</th>'
+        . '<th>Mes</th>'
+        . '</tr></thead>'
+        . '<tbody>' . $tabla_detalle . '</tbody>'
+        . '</table>'
+        . '</div>';
+
+    $oReturn->assign('divPendientesDepreciacion', 'innerHTML', $resumen_html);
+    $oReturn->script('mostrarPendientesDepreciacion();');
+
+    return $oReturn;
+}
+
 // PROCESAR DEPRECICION
 function generar($aForm = '')
 {
@@ -549,8 +733,12 @@ function generar($aForm = '')
                 $total_evaluados = 0;
                 $total_procesados = 0;
                 $total_omitidos = 0;
+                $total_activos = 0;
+                $total_sin_metd = 0;
+                $total_pendientes = 0;
                 $alertas_pendientes = [];
                 do {
+                    $total_activos++;
                     // LEER DATOS AVTIVO
                     $codigo_activo        =    $oIfxA->f('act_cod_act');
                     $vida_util          =    $oIfxA->f('act_vutil_act');
@@ -623,6 +811,7 @@ function generar($aForm = '')
                     $ultimo_periodo_real = intval(consulta_string($sql_ultimo_periodo, 'ultimo_periodo', $oIfx, 0));
                     if ($periodo_esperado > $ultimo_periodo_real) {
                         $estado_contable = 'PENDIENTE';
+                        $total_pendientes++;
                         $ultimo_mostrado = $ultimo_periodo_real > 0
                             ? substr($ultimo_periodo_real, 4, 2) . '/' . substr($ultimo_periodo_real, 0, 4)
                             : '--/----';
@@ -681,6 +870,11 @@ function generar($aForm = '')
                                 $oIfx->Free();
 
                                 $valor_mesual = $arrayValorDepre[$codigo_activo] ?? 0;
+                                if ($valor_mesual <= 0) {
+                                    $estado = 'OMITIDO';
+                                    $motivo = 'SIN VALOR EN SAEMET';
+                                    $total_sin_metd++;
+                                } else {
 
                                 $sql_dep_acumulada = "SELECT (coalesce(cdep_dep_acum, 0) +  coalesce(cdep_gas_depn, 0)) as depr_acumulada
 										from saecdep
@@ -688,6 +882,16 @@ function generar($aForm = '')
 										and cdep_ani_depr = $anio_prev
 										and cdep_mes_depr = $mes_prev";
                                 $valor_acumulado = consulta_string($sql_dep_acumulada, 'depr_acumulada', $oIfx, 0);
+                                if ($valor_acumulado == 0) {
+                                    $periodo_actual_num = ($anio_iter * 100) + $mes_iter;
+                                    $sql_dep_ultimo = "SELECT (coalesce(cdep_dep_acum, 0) +  coalesce(cdep_gas_depn, 0)) as depr_acumulada
+										from saecdep
+										where cdep_cod_acti = $codigo_activo
+										and (cdep_ani_depr * 100 + cdep_mes_depr) < $periodo_actual_num
+										order by cdep_ani_depr desc, cdep_mes_depr desc
+										limit 1";
+                                    $valor_acumulado = consulta_string($sql_dep_ultimo, 'depr_acumulada', $oIfx, 0);
+                                }
 
                                 if ($valor_acumulado == 0) {
                                     $valor_anterior = 0;
@@ -714,6 +918,7 @@ function generar($aForm = '')
                                     $oIfx->QueryT($sql_cdep);
                                     $estado = 'PROCESADO';
                                     $motivo = 'DEPRECIADO';
+                                }
                                 }
                             }
                         }
@@ -762,9 +967,12 @@ function generar($aForm = '')
 
                 $resumen_html = '<div class="row">'
                     . '<div class="col-md-12">'
+                    . '<p><strong>Activos evaluados:</strong> ' . $total_activos . '</p>'
                     . '<p><strong>Meses evaluados:</strong> ' . $total_evaluados . '</p>'
                     . '<p><strong>Procesados:</strong> ' . $total_procesados . '</p>'
                     . '<p><strong>Omitidos:</strong> ' . $total_omitidos . '</p>'
+                    . '<p><strong>Meses sin valor en SAEMET:</strong> ' . $total_sin_metd . '</p>'
+                    . '<p><strong>Activos con pendientes:</strong> ' . $total_pendientes . '</p>'
                     . '</div>'
                     . '</div>'
                     . $alerta_html
