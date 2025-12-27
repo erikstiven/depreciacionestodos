@@ -10,9 +10,8 @@ $(document).ready(function() {
 	    	"type": "POST"
 		},					
 		"columns": [
-			{ "data": "codigo_pais" },
-			{ "data": "continente" },
-			{ "data": "nombre_pais" },
+			{ "data": "codigo_grupo" },
+			{ "data": "nombre_grupo" },
 			{ "data": "selecciona" }
 		],
 		"keys": {
@@ -65,9 +64,8 @@ function recarga_lista() {
 	    	"type": "POST"
 		},					
 		"columns": [
-			{ "data": "codigo_pais" },
-			{ "data": "continente" },
-			{ "data": "nombre_pais" },
+			{ "data": "codigo_grupo" },
+			{ "data": "nombre_grupo" },
 			{ "data": "selecciona" }
 		],
 		"keys": {

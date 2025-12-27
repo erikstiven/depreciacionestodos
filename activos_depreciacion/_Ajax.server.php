@@ -626,7 +626,7 @@ function generar($aForm = '')
                         $ultimo_mostrado = $ultimo_periodo_real > 0
                             ? substr($ultimo_periodo_real, 4, 2) . '/' . substr($ultimo_periodo_real, 0, 4)
                             : '--/----';
-                        $alertas_pendientes[] = 'El activo ' . $clave_activo . ' tiene meses pendientes de depreciar. '
+                        $alertas_pendientes[] = 'El activo ' . $clave_activo . ' - ' . $nombre_activo . ' tiene meses pendientes de depreciar. '
                             . 'Último mes depreciado: ' . $ultimo_mostrado
                             . ' Mes esperado: ' . substr($periodo_esperado, 4, 2) . '/' . substr($periodo_esperado, 0, 4);
                     }

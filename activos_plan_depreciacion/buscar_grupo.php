@@ -18,43 +18,35 @@
     if (isset($_REQUEST['nomGrupo'])){
         $nomGrupo = $_REQUEST['nomGrupo'];
 		if(($nomGrupo!='0')&&($nomGrupo!='')){
-			$con_nom="where (pais_des_pais like upper ('%$nomGrupo%'))";
+			$con_nom="and (gact_des_gact like upper ('%$nomGrupo%'))";
 		}else{
 			$con_nom=null;
 		}
 	}
     else{
         $nomGrupo = null;
+		$con_nom = null;
 	}
-    //lectura sucia
-    
 
     $tabla = '';
 
-    $sql = "select pais_cod_pais, pais_cod_grup, 
-			(select grup_des_grup from saegrup where grup_cod_grup = pais_cod_grup) as nom_grupo , 
-			pais_des_pais, pais_des_naci, pais_cod_inte
-    		from saepais
-			$nomGrupo";
+    $sql = "select gact_cod_gact, gact_des_gact
+    		from saegact
+			where gact_cod_empr = $idempresa
+            $con_nom";
 			
 			//echo $sql;exit;
 	$i=1;
     if($oIfx->Query($sql)){
     	if($oIfx->NumFilas() > 0){
     		do{
-				$pais_cod_pais = $oIfx->f('pais_cod_pais');
-				$pais_cod_grup = $oIfx->f('pais_cod_grup');
-				$nom_grupo     = $oIfx->f('nom_grupo');
-				$pais_des_pais = $oIfx->f('pais_des_pais');
-				$pais_des_naci = $oIfx->f('pais_des_naci');
-				$pais_cod_inte = $oIfx->f('pais_cod_inte');
-				//$pais_des_pais = str_replace("'", " ", $pais_des_pais);
+				$codigo_grupo = $oIfx->f('gact_cod_gact');
+				$nombre_grupo = $oIfx->f('gact_des_gact');
 
-				$img = '<div align=\"center\"><div class=\"btn btn-success btn-sm\" onclick=\"seleccionaItem(\'' . $pais_cod_pais . '\', \'' . $pais_cod_grup . '\', \'' . $pais_des_pais . '\', \''.$pais_des_naci.'\', \''.$pais_cod_inte.'\')\"><span class=\"glyphicon glyphicon-ok\"><span></div> </div>';
+				$img = '<div align=\"center\"><div class=\"btn btn-success btn-sm\" onclick=\"seleccionaItem(\'' . $codigo_grupo . '\', \'' . $nombre_grupo . '\')\"><span class=\"glyphicon glyphicon-ok\"><span></div> </div>';
     			$tabla.='{
-				  "codigo_pais":"'.$pais_cod_pais.'",
-				  "continente":"'.$nom_grupo.'",
-				  "nombre_pais":"'.$pais_des_pais.'",
+				  "codigo_grupo":"'.$codigo_grupo.'",
+				  "nombre_grupo":"'.$nombre_grupo.'",
 				  "selecciona":"'.$img.'"
 				},';
 				$i++;
